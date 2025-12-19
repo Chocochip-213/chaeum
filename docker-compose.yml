@@ -1,0 +1,53 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=bookroad
+    ports:
+      - "5432:5432"
+
+  # [2] Redis
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+
+  # [3] Backend (Django)
+  backend:
+    build: ./backend
+    # 프로젝트 생성 전에는 이 커맨드가 실패하겠지만, 생성을 위해 build는 필요함
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    # 환경변수는 나중에 생성할 .env 파일 참조
+    env_file:
+      - ./backend/.env
+
+  # [4] AI Inference
+  inference:
+    build: ./inference
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./inference:/app
+      - ./inference_cache:/root/.cache/huggingface
+    ports:
+      - "8001:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+volumes:
+  postgres_data:
