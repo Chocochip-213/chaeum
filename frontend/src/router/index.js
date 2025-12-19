@@ -25,6 +25,17 @@ const router = createRouter({
       component: () => import('@/views/SignupView.vue'),
     },
     {
+      path: '/find-password',
+      name: 'find-password',
+      component: () => import('@/views/FindPasswordView.vue'),
+    },
+    {
+      path: '/password-reset/confirm/:uid/:token',
+      name: 'password-reset-confirm',
+      component: () => import('@/views/PasswordResetConfirmView.vue'),
+      props: true,
+    },
+    {
       path: '/books',
       name: 'book-list',
       component: () => import('@/views/BookListView.vue'),
