@@ -1,3 +1,10 @@
+import os
+import environ
+from pathlib import Path
+
+env = environ.Env(DEBUG=(bool, True))
+environ.Env.read_env(os.path.join(Path(__file__).resolve().parent.parent, '.env'))
+
 """
 Django settings for config project.
 
@@ -79,10 +86,7 @@ AUTH_USER_MODEL = 'users.User' # 커스텀 유저 모델 지정함.
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
 
