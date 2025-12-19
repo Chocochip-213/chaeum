@@ -76,6 +76,14 @@ cover/
 
 # Django stuff:
 
+# Project Specific
+inference_cache/
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+*.log
+
 # Flask stuff:
 instance/
 .webassets-cache
