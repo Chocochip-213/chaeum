@@ -74,7 +74,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
+AUTH_USER_MODEL = 'users.User' # 커스텀 유저 모델 지정함.
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
