@@ -6,7 +6,7 @@
           <h1>환영합니다! 👋</h1>
           <p>오늘도 성장을 위해 돌아오셨군요.</p>
         </div>
-        <form @submit.prevent="onSubmit">
+        <form @submit.prevent="onLogin">
           <div class="input-group">
             <Mail class="input-icon" :size="20" />
             <input
@@ -50,16 +50,29 @@
 import { ref } from 'vue'
 import AuthTemplate from '@/components/AuthTemplate.vue'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import api from '@/api'
 
+const router = useRouter()
 const showPassword = ref(false)
 const email = ref('')
 const password = ref('')
 
-const onSubmit = () => {
-  console.log('로그인 정보:', {
-    email: email.value,
-    password: password.value,
-  })
+const onLogin = async () => {
+  try {
+    const response = await api.post('/users/login/', {
+      email: email.value,
+      password: password.value,
+    })
+
+    const { access, refresh } = response.data
+    localStorage.setItem('accessToken', access)
+    localStorage.setItem('refreshToken', refresh)
+
+    router.push('/')
+  } catch {
+    alert('이메일 혹은 비밀번호를 확인해 주세요.')
+  }
 }
 </script>
 
