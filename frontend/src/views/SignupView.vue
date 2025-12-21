@@ -9,7 +9,7 @@
         <form @submit.prevent="onSubmit">
           <div class="input-group">
             <User class="input-icon" :size="20" />
-            <input type="text" placeholder="이름" class="styled-input" required />
+            <input type="text" v-model="name" placeholder="이름" class="styled-input" required />
           </div>
           <div class="input-group">
             <Building2 class="input-icon" :size="20" />
@@ -24,12 +24,19 @@
           </div>
           <div class="input-group">
             <Mail class="input-icon" :size="20" />
-            <input type="email" placeholder="이메일 주소" class="styled-input" required />
+            <input
+              type="email"
+              v-model="email"
+              placeholder="이메일 주소"
+              class="styled-input"
+              required
+            />
           </div>
           <div class="input-group">
             <Lock class="input-icon" :size="20" />
             <input
               :type="showPassword ? 'text' : 'password'"
+              v-model="password"
               placeholder="비밀번호"
               class="styled-input"
               required
@@ -41,7 +48,10 @@
           </div>
           <div class="form-footer">
             <button type="submit" class="submit-btn">회원가입</button>
-            <div class="login-link">이미 계정이 있으신가요? <a href="/login">로그인</a></div>
+            <div class="login-link">
+              이미 계정이 있으신가요?
+              <RouterLink to="/login">로그인</RouterLink>
+            </div>
           </div>
         </form>
       </div>
@@ -55,10 +65,18 @@ import AuthTemplate from '@/components/AuthTemplate.vue'
 import { Mail, Lock, Eye, EyeOff, User, Building2, ChevronDown } from 'lucide-vue-next'
 
 const showPassword = ref(false)
+const name = ref('')
 const selectedCampus = ref('서울 캠퍼스')
+const email = ref('')
+const password = ref('')
 
 const onSubmit = () => {
-  console.log('선택된 캠퍼스:', selectedCampus.value)
+  console.log('가입 정보:', {
+    name: name.value,
+    campus: selectedCampus.value,
+    email: email.value,
+    password: password.value,
+  })
 }
 </script>
 

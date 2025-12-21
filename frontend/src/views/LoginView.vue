@@ -6,15 +6,22 @@
           <h1>환영합니다! 👋</h1>
           <p>오늘도 성장을 위해 돌아오셨군요.</p>
         </div>
-        <form @submit.prevent="">
+        <form @submit.prevent="onSubmit">
           <div class="input-group">
             <Mail class="input-icon" :size="20" />
-            <input type="email" placeholder="이메일 주소" class="styled-input" required />
+            <input
+              type="email"
+              v-model="email"
+              placeholder="이메일 주소"
+              class="styled-input"
+              required
+            />
           </div>
           <div class="input-group">
             <Lock class="input-icon" :size="20" />
             <input
               :type="showPassword ? 'text' : 'password'"
+              v-model="password"
               placeholder="비밀번호"
               class="styled-input"
               required
@@ -25,10 +32,13 @@
             </button>
           </div>
           <div class="form-footer">
-            <a href="/find-password" class="forgot-pw">비밀번호를 잊으셨나요?</a>
+            <RouterLink to="/find-password" class="forgot-pw">비밀번호를 잊으셨나요?</RouterLink>
             <button type="submit" class="submit-btn">로그인</button>
 
-            <div class="signup-link">아직 회원이 아니신가요? <a href="/signup">회원가입</a></div>
+            <div class="signup-link">
+              아직 회원이 아니신가요?
+              <RouterLink to="/signup">회원가입</RouterLink>
+            </div>
           </div>
         </form>
       </div>
@@ -42,6 +52,15 @@ import AuthTemplate from '@/components/AuthTemplate.vue'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-vue-next'
 
 const showPassword = ref(false)
+const email = ref('')
+const password = ref('')
+
+const onSubmit = () => {
+  console.log('로그인 정보:', {
+    email: email.value,
+    password: password.value,
+  })
+}
 </script>
 
 <style scoped>
