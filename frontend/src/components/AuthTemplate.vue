@@ -65,18 +65,22 @@ import { BookOpen } from 'lucide-vue-next'
   background: linear-gradient(to bottom right, #222222, #666666);
 }
 
-@media (min-width: 768px) {
-  .left-template {
-    display: flex;
-  }
-}
-
 .right-content {
-  width: 50%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 48px;
+}
+
+@media (min-width: 768px) {
+  .left-template {
+    display: flex;
+  }
+
+  .right-content {
+    width: 50%;
+  }
 }
 </style>
