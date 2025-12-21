@@ -6,7 +6,7 @@
           <h1>계정 만들기 🚀</h1>
           <p>채움과 함께 성장의 여정을 시작해보세요.</p>
         </div>
-        <form @submit.prevent="onSubmit">
+        <form @submit.prevent="onSignup">
           <div class="input-group">
             <User class="input-icon" :size="20" />
             <input type="text" v-model="name" placeholder="이름" class="styled-input" required />
@@ -63,20 +63,42 @@
 import { ref } from 'vue'
 import AuthTemplate from '@/components/AuthTemplate.vue'
 import { Mail, Lock, Eye, EyeOff, User, Building2, ChevronDown } from 'lucide-vue-next'
+import api from '@/api'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const showPassword = ref(false)
 const name = ref('')
 const selectedCampus = ref('서울 캠퍼스')
 const email = ref('')
 const password = ref('')
 
-const onSubmit = () => {
-  console.log('가입 정보:', {
-    name: name.value,
-    campus: selectedCampus.value,
-    email: email.value,
-    password: password.value,
-  })
+const onSignup = async () => {
+  try {
+    await api.post('/users/signup/', {
+      email: email.value,
+      password: password.value,
+      nickname: name.value,
+      campus: selectedCampus.value,
+    })
+
+    router.push('/login')
+  } catch (error) {
+    if (error.response && error.response.data) {
+      const errorData = error.response.data
+
+      if (errorData.email) {
+        const goToLogin = confirm('이미 가입된 이메일입니다. 로그인 페이지로 이동하시겠습니까?')
+
+        if (goToLogin) {
+          router.push('/login')
+        } else {
+          password.value = ''
+        }
+        return
+      }
+    }
+  }
 }
 </script>
 
