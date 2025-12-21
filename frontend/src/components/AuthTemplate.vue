@@ -77,5 +77,6 @@ import { BookOpen } from 'lucide-vue-next'
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  padding: 48px;
 }
 </style>
