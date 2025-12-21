@@ -33,9 +33,9 @@ const router = createRouter({
       meta: { layout: 'empty' },
     },
     {
-      path: '/password-reset/confirm/:uid/:token',
-      name: 'password-reset-confirm',
-      component: () => import('@/views/PasswordResetConfirmView.vue'),
+      path: '/reset-password/:uidb64/:token',
+      name: 'reset-password',
+      component: () => import('@/views/ResetPassword.vue'),
       props: true,
       meta: { layout: 'empty' },
     },
