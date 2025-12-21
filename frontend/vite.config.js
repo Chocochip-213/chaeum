@@ -6,13 +6,19 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueDevTools(),
-  ],
+  plugins: [vue(), vueDevTools()],
+  server: {
+    proxy: {
+      '/aladin': {
+        target: 'http://www.aladin.co.kr/ttb/api',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/aladin/, ''),
+      },
+    },
+  },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
 })
