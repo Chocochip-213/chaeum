@@ -16,17 +16,26 @@
       </nav>
 
       <div class="btn-container">
-        <button class="btn-login" @click="router.push({ name: 'login' })">로그인</button>
-        <button class="btn-signup" @click="router.push({ name: 'signup' })">회원가입</button>
+        <template v-if="authStore.isLogin">
+          <div class="user-icon-wrapper" @click="handleLogout">
+            <User :size="24" />
+          </div>
+        </template>
+
+        <template v-else>
+          <button class="btn-login" @click="router.push({ name: 'login' })">로그인</button>
+          <button class="btn-signup" @click="router.push({ name: 'signup' })">회원가입</button>
+        </template>
       </div>
     </div>
   </header>
 </template>
-
 <script setup>
-import { BookOpen, Search } from 'lucide-vue-next'
+import { BookOpen, Search, User } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const router = useRouter()
 </script>
 
@@ -107,6 +116,23 @@ li:hover svg {
   height: 16px;
   stroke: #5c5c5c;
   transition: stroke 0.2s;
+}
+
+.user-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  background-color: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  color: #4b5563;
+}
+
+.user-icon-wrapper:hover {
+  background-color: #e5e7eb;
 }
 
 .btn-container {

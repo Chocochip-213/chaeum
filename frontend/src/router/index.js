@@ -18,26 +18,26 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
-      meta: { layout: 'empty' },
+      meta: { layout: 'empty', guestOnly: true },
     },
     {
       path: '/signup',
       name: 'signup',
       component: () => import('@/views/SignupView.vue'),
-      meta: { layout: 'empty' },
+      meta: { layout: 'empty', guestOnly: true },
     },
     {
       path: '/find-password',
       name: 'find-password',
       component: () => import('@/views/FindPasswordView.vue'),
-      meta: { layout: 'empty' },
+      meta: { layout: 'empty', guestOnly: true },
     },
     {
-      path: '/password-reset/confirm/:uid/:token',
-      name: 'password-reset-confirm',
-      component: () => import('@/views/PasswordResetConfirmView.vue'),
+      path: '/reset-password/:uidb64/:token',
+      name: 'reset-password',
+      component: () => import('@/views/ResetPassword.vue'),
       props: true,
-      meta: { layout: 'empty' },
+      meta: { layout: 'empty', guestOnly: true },
     },
     {
       path: '/books',
@@ -90,11 +90,13 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = localStorage.getItem('access_token')
+  const isAuthenticated = localStorage.getItem('accessToken')
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     alert('로그인이 필요한 서비스입니다.')
     next({ name: 'login', query: { redirect: to.fullPath } })
+  } else if (to.meta.guestOnly && isAuthenticated) {
+    next({ name: 'home' })
   } else {
     next()
   }

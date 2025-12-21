@@ -7,7 +7,7 @@
           <p>가입한 이메일 주소를 입력하시면 재설정 링크를 보내드립니다.</p>
         </div>
 
-        <form @submit.prevent="onSubmit">
+        <form @submit.prevent="onFindPassword">
           <div class="input-group">
             <Mail class="input-icon" :size="20" />
             <input
@@ -20,8 +20,13 @@
           </div>
 
           <div class="form-footer">
-            <button type="submit" class="submit-btn">재설정 링크 보내기</button>
-
+            <button type="submit" class="submit-btn" :disabled="isLoading">
+              <span v-if="isLoading" class="loading-content">
+                <Loader2 class="spin-icon" :size="20" />
+                처리중...
+              </span>
+              <span v-else>재설정 링크 보내기</span>
+            </button>
             <div class="login-link">
               비밀번호가 기억나셨나요? <RouterLink to="/login">로그인</RouterLink>
             </div>
@@ -67,14 +72,26 @@
 <script setup>
 import { ref } from 'vue'
 import AuthTemplate from '@/components/AuthTemplate.vue'
-import { Mail, MailCheck } from 'lucide-vue-next'
+import { Mail, MailCheck, Loader2 } from 'lucide-vue-next'
+import api from '@/api'
 
 const email = ref('')
 const isEmailSent = ref(false)
+const isLoading = ref(false)
 
-const onSubmit = async () => {
-  console.log(`이메일 전송 요청: ${email.value}`)
-  isEmailSent.value = true
+const onFindPassword = async () => {
+  if (isLoading.value) return
+  try {
+    isLoading.value = true
+    await api.post('/users/password/reset/', {
+      email: email.value,
+    })
+    isEmailSent.value = true
+  } catch {
+    alert('가입된 메일을 찾을 수 없습니다.')
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -157,6 +174,32 @@ const onSubmit = async () => {
   text-decoration: none;
   display: inline-block;
   text-align: center;
+}
+
+.submit-btn:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.loading-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .submit-btn:hover {
