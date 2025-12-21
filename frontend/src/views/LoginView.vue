@@ -52,7 +52,9 @@ import AuthTemplate from '@/components/AuthTemplate.vue'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import api from '@/api'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const router = useRouter()
 const showPassword = ref(false)
 const email = ref('')
@@ -66,8 +68,7 @@ const onLogin = async () => {
     })
 
     const { access, refresh } = response.data
-    localStorage.setItem('accessToken', access)
-    localStorage.setItem('refreshToken', refresh)
+    authStore.login(access, refresh)
 
     router.push('/')
   } catch {
