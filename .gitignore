@@ -26,6 +26,10 @@ media
 ### Community ###
 backend/apps/community/management
 
+### Gradio Test ###
+backend/seed_test_data.py
+backend/test_resume.pdf
+
 # C extensions
 *.so
 
