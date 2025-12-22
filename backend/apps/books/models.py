@@ -45,11 +45,16 @@ class TOCChunk(models.Model):
 class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE, related_name = 'reviews')
 
-    book = models.ForeignKey(Book, on_delete = models.CASCADE, related_name = 'reviews', db_column = 'book_isbn',
-                             to_field = 'isbn')
+    isbn = models.CharField(
+        max_length=13,
+        db_index=True,
+        help_text="도서 ISBN 참조"
+    )
+
     rating = models.IntegerField(default = 5)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'reviews'
