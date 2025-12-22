@@ -19,10 +19,14 @@
         </div>
 
         <div class="book-details">
-          <div class="category-badge">{{ book.categoryName }}</div>
+          <div class="badge-row">
+            <span class="category-badge">{{ book.categoryName }}</span>
+          </div>
 
           <h1 class="title">{{ book.title }}</h1>
-          <p class="author-publisher">{{ book.author }} | {{ book.publisher }}</p>
+          <p class="author-publisher">
+            {{ book.author }} | {{ book.publisher }} | {{ book.pubDate }}
+          </p>
 
           <div class="purchase-box">
             <div class="price-stock-row">
@@ -35,6 +39,12 @@
           </div>
 
           <p class="description">{{ book.description }}</p>
+
+          <div class="tag-section">
+            <span v-for="(tag, index) in book.tags" :key="index" class="book-tag">
+              {{ tag }}
+            </span>
+          </div>
         </div>
       </section>
 
@@ -44,7 +54,7 @@
             <MessageSquare :size="20" class="icon-title" /> 독서 모임 스레드
           </h3>
 
-          <button class="join-btn"><Plus :size="14" stroke-width="3" /> 모임 글 작성하기</button>
+          <button class="join-btn"><Plus :size="14" stroke-width="3" /> 모임 참여하기</button>
         </div>
 
         <div v-if="dummyThreads.length > 0" class="thread-list">
@@ -90,7 +100,6 @@ const route = useRoute()
 const loading = ref(true)
 const book = ref({})
 
-// 임시 스레드 데이터
 const dummyThreads = ref([
   {
     id: 1,
@@ -103,7 +112,7 @@ const dummyThreads = ref([
   },
   {
     id: 2,
-    username: '김민우',
+    username: '파이썬마스터',
     time: '5시간 전',
     content:
       '이 책 처음 읽어보는데 생각보다 어렵네요 ㅠㅠ 다들 1장 깨끗한 코드 부분 어떻게 이해하셨나요?',
@@ -131,6 +140,12 @@ const fetchBookDetail = async () => {
     if (response.data.item && response.data.item.length > 0) {
       const item = response.data.item[0]
 
+      const rawCategory = item.categoryName || ''
+      const tags = rawCategory
+        .split('>')
+        .slice(1)
+        .map((cat) => `#${cat.trim()}`)
+
       book.value = {
         title: item.title,
         author: item.author,
@@ -143,6 +158,7 @@ const fetchBookDetail = async () => {
         categoryName: item.categoryName.split('>')[1] || 'General',
         link: item.link,
         stockStatus: item.stockStatus || 'SSAFY 서울점',
+        tags: tags.length > 0 ? tags : ['#개발', '#프로그래밍'],
       }
     } else {
       console.error('책 정보를 찾을 수 없습니다.')
@@ -230,20 +246,25 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
 }
-.category-badge {
-  background-color: #f0f0f0;
-  color: #666;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  align-self: flex-start;
+
+.badge-row {
   margin-bottom: 12px;
 }
+.category-badge {
+  background-color: #f3f0e9;
+  color: #8d6e63;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  align-self: flex-start;
+}
+
 .title {
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 10px 0;
+  line-height: 1.3;
 }
 .author-publisher {
   color: #666;
@@ -298,6 +319,21 @@ onMounted(() => {
 .description {
   line-height: 1.6;
   color: #444;
+  margin-bottom: 24px;
+}
+
+.tag-section {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.book-tag {
+  font-size: 0.85rem;
+  color: #4f46e5;
+  background-color: #eef2ff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
 }
 
 .section-header {
@@ -323,17 +359,14 @@ onMounted(() => {
   border: none;
   border-bottom: 2px solid #333;
   padding: 0 0 2px 0;
-
   color: #333;
   font-size: 0.95rem;
   font-weight: 700;
-
   display: flex;
   align-items: center;
   gap: 4px;
   cursor: pointer;
 }
-
 .join-btn:hover {
   opacity: 0.7;
 }
