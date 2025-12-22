@@ -40,21 +40,3 @@ class TOCChunk(models.Model):
 
     class Meta:
         db_table = 'toc_chunks'
-
-
-class Review(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE, related_name = 'reviews')
-
-    isbn = models.CharField(
-        max_length=13,
-        db_index=True,
-        help_text="도서 ISBN 참조"
-    )
-
-    rating = models.IntegerField(default = 5)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add = True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'reviews'
