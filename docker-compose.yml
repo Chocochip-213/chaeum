@@ -32,6 +32,16 @@ services:
     env_file:
       - ./backend/.env
 
+  worker:
+    build: ./backend
+    command: celery -A config worker --loglevel=info --pool=gevent --concurrency=60
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+    env_file:
+      - ./backend/.env
+
   # [4] AI Inference
   inference:
     build: ./inference
