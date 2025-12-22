@@ -37,7 +37,7 @@ import { Search, Star } from 'lucide-vue-next'
 import CategoryLabel from '@/components/CategoryLabel.vue'
 import BestsellerList from '@/components/BestsellerList.vue'
 
-const categories = ref(['Engineering', 'Frontend', 'Backend', 'System Design', 'AI/ML'])
+const categories = ref(['프론트엔드', '백엔드', 'AI', '데이터베이스'])
 </script>
 
 <style scoped>

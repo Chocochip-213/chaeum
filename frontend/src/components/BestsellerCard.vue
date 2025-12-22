@@ -1,5 +1,5 @@
 <template>
-  <div class="book-card">
+  <div class="book-card" @click="onClick(book.isbn13)">
     <div class="cover-wrapper">
       <div class="rank-badge">{{ rank }}</div>
       <img :src="book.cover.replace('coversum', 'cover500')" :alt="book.title" class="book-cover" />
@@ -12,10 +12,18 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
 defineProps({
   book: Object,
   rank: Number,
 })
+
+const onClick = (isbn13) => {
+  router.push(`/books/${isbn13}`)
+}
 </script>
 
 <style scoped>
@@ -24,6 +32,7 @@ defineProps({
   display: flex;
   flex-direction: column;
   gap: 12px;
+  cursor: pointer;
 }
 
 .cover-wrapper {

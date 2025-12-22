@@ -57,7 +57,6 @@ const handleNavClick = (routeName) => {
   router.push({ name: routeName })
   isMenuOpen.value = false
 }
-
 </script>
 
 <style scoped>
@@ -216,7 +215,7 @@ button {
 
 @media (max-width: 768px) {
   .inner {
-    display: flex; 
+    display: flex;
     justify-content: space-between;
     padding: 0.75rem 1rem;
   }
@@ -277,7 +276,8 @@ button {
     justify-self: center;
   }
 
-  .btn-login, .btn-signup {
+  .btn-login,
+  .btn-signup {
     width: 90%;
   }
 }
