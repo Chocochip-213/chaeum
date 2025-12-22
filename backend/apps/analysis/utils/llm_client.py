@@ -24,8 +24,6 @@ class LLMClient:
             "지원자의 이력서를 분석하여 보유 기술(Extracted Skills)을 파악하고, "
             "직무 기술서(JD)와의 격차(Gap)를 분석하는 것이 당신의 임무입니다.\n"
             "부족한 기술(Missing Skills)을 식별하고, 왜 그것이 부족한지 상세한 이유를 한국어로 설명하십시오."
-            "모든 분석 결과(main_tasks, missing_skills_chapter 등)는 반드시 **한국어**로 작성되어야 합니다. "
-            "(단, 기술 스택 명칭은 영문 유지)\n"
             "missing_skills_chapters를 포함하여 JSON을 생성하라"
         )
 
@@ -34,8 +32,7 @@ class LLMClient:
         {resume_text[:10000]}
         ### Job Description:
         {job_text[:5000]}
-        Please analyze the resume skills and perform a Gap Analysis to use Korean.
-        
+        Please analyze the resume skills and perform a Gap Analysis.
         """
 
         full_prompt = f"{system_prompt}\n\n{user_prompt}"
