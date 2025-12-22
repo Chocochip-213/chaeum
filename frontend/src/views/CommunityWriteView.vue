@@ -173,7 +173,7 @@ onMounted(() => {
   border-radius: 12px;
   background-color: #f9fafb;
   margin-bottom: 30px;
-} /* 마진 조정 */
+}
 .book-cover {
   width: 60px;
   height: 87px;
@@ -233,12 +233,11 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
-/* ★ 제목 입력창 스타일 추가 */
 .input-wrapper {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
-  padding: 0 16px; /* 좌우 패딩만 */
+  padding: 0 16px;
   background: white;
   transition: border-color 0.2s;
 }
@@ -247,7 +246,7 @@ onMounted(() => {
 }
 .title-input {
   width: 100%;
-  height: 50px; /* 높이 고정 */
+  height: 50px;
   border: none;
   font-size: 16px;
   outline: none;
