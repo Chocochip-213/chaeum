@@ -14,10 +14,23 @@
       <div class="menu-group" :class="{ 'is-open': isMenuOpen }">
         <nav>
           <ul>
-            <li @click="handleNavClick('home')">서재</li>
-            <li class="search" @click="handleNavClick('book-list')"><Search />도서 검색</li>
-            <li @click="handleNavClick('analysis')">AI 커리어</li>
-            <li @click="handleNavClick('community')">독서 모임</li>
+            <li :class="{ active: route.name === 'home' }" @click="handleNavClick('home')">서재</li>
+            <li
+              class="search"
+              :class="{ active: route.name === 'book-list' }"
+              @click="handleNavClick('book-list')"
+            >
+              <Search :size="18" />도서 검색
+            </li>
+            <li :class="{ active: route.name === 'analysis' }" @click="handleNavClick('analysis')">
+              AI 커리어
+            </li>
+            <li
+              :class="{ active: route.name === 'community' }"
+              @click="handleNavClick('community')"
+            >
+              독서 모임
+            </li>
           </ul>
         </nav>
 
@@ -40,12 +53,13 @@
 
 <script setup>
 import { BookOpen, Search, User, Menu, X } from 'lucide-vue-next'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { ref } from 'vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const isMenuOpen = ref(false)
 
@@ -145,6 +159,14 @@ li:hover {
 
 li:hover svg {
   stroke: #1a1a1a;
+}
+
+li.active {
+  color: #111;
+}
+
+li.active svg {
+  stroke: #111;
 }
 
 .search svg {
