@@ -1,5 +1,7 @@
 asgiref==3.11.0
 attrs==25.4.0
+beautifulsoup4==4.14.3
+celery==5.4.0
 certifi==2025.11.12
 charset-normalizer==3.4.4
 Django==4.2.16
@@ -9,6 +11,8 @@ django-filter==24.3
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.29.0
+gevent==24.2.1
+gradio_client
 idna==3.11
 inflection==0.5.1
 jsonschema==4.25.1
@@ -17,7 +21,9 @@ numpy==2.4.0
 pgvector==0.4.2
 psycopg2-binary==2.9.11
 PyJWT==2.10.1
+pymupdf==1.26.6
 PyYAML==6.0.3
+redis==5.0.1
 referencing==0.37.0
 requests==2.32.5
 rpds-py==0.30.0
