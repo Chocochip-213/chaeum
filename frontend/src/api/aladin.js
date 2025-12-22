@@ -1,7 +1,10 @@
 import axios from 'axios'
 
 const aladinApi = axios.create({
-  baseURL: '/aladin',
+  baseURL: '/ttb/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
 export default aladinApi

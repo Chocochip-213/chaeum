@@ -1,18 +1,16 @@
 import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), vueDevTools()],
+  plugins: [vue()],
   server: {
     proxy: {
-      '/aladin': {
-        target: 'http://www.aladin.co.kr/ttb/api',
+      '/ttb': {
+        target: 'https://www.aladin.co.kr',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/aladin/, ''),
+        secure: false,
       },
     },
   },
