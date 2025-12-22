@@ -4,10 +4,6 @@
       <div class="card-container">
         <h1>당신의 부족한 2%를 채우는 시간</h1>
         <p>이력서 기반 역량 분석부터 맞춤형 도서 추천까지.<br />깊이 있는 성장을 경험하세요.</p>
-        <div class="card-btn-container">
-          <RouterLink to="analysis" class="first-btn">내 역량 분석하기</RouterLink>
-          <RouterLink to="books" class="second-btn">인기 도서 보기</RouterLink>
-        </div>
       </div>
       <div class="category-container">
         <div class="category-label">
@@ -15,7 +11,10 @@
           <span>카테고리 탐색</span>
         </div>
         <div class="categories-container">
-          <CategoryLabel v-for="category in categories" :key="category"
+          <CategoryLabel
+            v-for="category in categories"
+            :key="category"
+            @click="handleCategoryClick(category)"
             >{{ category }}
           </CategoryLabel>
         </div>
@@ -34,10 +33,19 @@
 <script setup>
 import { ref } from 'vue'
 import { Search, Star } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import CategoryLabel from '@/components/CategoryLabel.vue'
 import BestsellerList from '@/components/BestsellerList.vue'
 
+const router = useRouter()
 const categories = ref(['프론트엔드', '백엔드', 'AI', '데이터베이스'])
+
+const handleCategoryClick = (categoryName) => {
+  router.push({
+    name: 'book-list',
+    query: { q: categoryName },
+  })
+}
 </script>
 
 <style scoped>
@@ -73,30 +81,6 @@ const categories = ref(['프론트엔드', '백엔드', 'AI', '데이터베이�
 
 .card-container p {
   color: #d1dadb;
-}
-
-.card-btn-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-btn-container a {
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: none;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.first-btn {
-  background-color: #ffffff;
-  color: #1a1a1a;
-}
-
-.second-btn {
-  background-color: #1a1a1a;
-  color: #ffffff;
 }
 
 .category-container {

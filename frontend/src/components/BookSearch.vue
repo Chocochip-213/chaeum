@@ -95,7 +95,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import aladinApi from '@/api/aladin'
 import { Search, ArrowUp } from 'lucide-vue-next'
 import { useBookSearchStore } from '@/stores/bookSearch'
@@ -110,6 +110,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const route = useRoute()
 const store = useBookSearchStore()
 
 const loading = ref(false) // API 요청 중인지 여부
@@ -241,8 +242,21 @@ onMounted(() => {
 
   window.addEventListener('scroll', handleScroll)
 
+  if (route.query.q) {
+    store.keyword = route.query.q
+
+    // 기존 결과 초기화 후 검색 실행
+    store.clearResults()
+    store.lastKeyword = store.keyword
+    store.hasSearched = true
+    fetchBooks()
+
+    // 검색 이후 URL 쿼리 파라미터 지우기
+    router.replace({ query: null })
+  }
+
   // 이전에 검색한 결과가 있고, 스크롤 위치가 저장되어 있을 경우 (뒤로가기로 왔을 때)
-  if (store.books.length > 0 && store.scrollY > 0) {
+  else if (store.books.length > 0 && store.scrollY > 0) {
     // 1. 화면을 잠시 투명하게 만듦 (깜빡임 방지)
     isRestoring.value = true
 
