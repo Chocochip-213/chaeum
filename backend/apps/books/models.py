@@ -40,16 +40,3 @@ class TOCChunk(models.Model):
 
     class Meta:
         db_table = 'toc_chunks'
-
-
-class Review(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE, related_name = 'reviews')
-
-    book = models.ForeignKey(Book, on_delete = models.CASCADE, related_name = 'reviews', db_column = 'book_isbn',
-                             to_field = 'isbn')
-    rating = models.IntegerField(default = 5)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add = True)
-
-    class Meta:
-        db_table = 'reviews'
