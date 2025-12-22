@@ -1,9 +1,9 @@
 <template>
-  <div>
-    <h1>도서검색페이지</h1>
-  </div>
+  <BookSearch mode="search" />
 </template>
 
-<script setup></script>
+<script setup>
+import BookSearch from '@/components/BookSearch.vue'
+</script>
 
 <style scoped></style>
