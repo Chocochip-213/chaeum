@@ -57,7 +57,7 @@
         <div v-if="isPostsLoading" class="status-msg">관련 게시글을 불러오는 중입니다...</div>
 
         <div v-else-if="posts.length > 0" class="thread-list">
-          <div v-for="post in posts" :key="post.id" class="thread-card">
+          <div v-for="post in posts" :key="post.id" class="thread-card" @click="goToPost(post.id)">
             <div class="card-header">
               <div class="user-profile">
                 <div class="avatar">{{ post.user_nickname?.charAt(0) || '?' }}</div>
@@ -82,7 +82,7 @@
 
             <div class="card-footer">
               <div class="actions">
-                <span class="action-item"> <Heart :size="16" /> {{ post.view_count }} </span>
+                <span class="action-item"> <Eye :size="16" /> {{ post.view_count }} </span>
                 <span class="action-item">
                   <MessageSquare :size="16" /> {{ post.comments?.length || 0 }}
                 </span>
@@ -103,7 +103,7 @@
 import aladinApi from '@/api/aladin'
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, MessageSquare, Heart } from 'lucide-vue-next'
+import { Plus, MessageSquare, Eye } from 'lucide-vue-next'
 import { usePosts } from '@/composables/usePosts'
 import { formatTimeAgo } from '@/utils/date'
 
@@ -113,6 +113,7 @@ const loading = ref(true)
 const book = ref({})
 
 const { posts, bookTitles, isLoading: isPostsLoading, fetchPosts } = usePosts()
+const goToPost = (id) => router.push({ name: 'community-detail', params: { id: id } })
 
 const fetchBookDetail = async () => {
   try {
@@ -176,7 +177,6 @@ const goToWrite = () => {
       title: book.value.title,
       cover: book.value.cover,
       author: book.value.author,
-      category: book.categoryName,
     },
   })
 }
@@ -479,11 +479,6 @@ watch(
   color: #888;
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.action-item:hover {
-  color: #111;
 }
 
 .book-badge-sm {

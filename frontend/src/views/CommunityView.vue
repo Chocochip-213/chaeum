@@ -19,7 +19,7 @@
           :class="{ active: currentSort === '-view_count' }"
           @click="handleSortChange('-view_count')"
         >
-          추천순
+          조회순
         </button>
       </div>
     </header>
@@ -30,7 +30,12 @@
         아직 작성된 게시글이 없습니다.
       </div>
 
-      <div v-for="post in posts" :key="post.id" class="post-card">
+      <div
+        v-for="post in posts"
+        :key="post.id"
+        class="post-card"
+        @click="goToCommunityDetail(post.id)"
+      >
         <div class="card-header">
           <div class="user-profile">
             <div class="avatar">{{ post.user_nickname?.charAt(0) || '?' }}</div>
@@ -40,23 +45,29 @@
           </div>
           <span class="time">{{ formatTimeAgo(post.created_at) }}</span>
         </div>
-        <div class="book-badge" @click="goToBookDetail(post.book_isbn)">
+
+        <button
+          type="button"
+          class="book-badge"
+          @click.stop.prevent="goToBookDetail(post.book_isbn)"
+        >
           <Book :size="14" />
           <span class="book-title">
             {{ bookTitles[post.book_isbn] || '도서 정보 로딩 중...' }}
           </span>
-        </div>
+        </button>
 
         <h3 class="post-title">{{ post.title }}</h3>
 
         <div class="post-content">
           {{ post.content }}
         </div>
+
         <div class="card-footer">
           <div class="actions">
-            <button class="action-item"><Heart :size="18" /> {{ post.view_count }}</button>
+            <button class="action-item"><Eye :size="18" /> {{ post.view_count }}</button>
             <button class="action-item">
-              <MessageCircle :size="18" /> 댓글 {{ post.comments?.length || 0 }}
+              <MessageCircle :size="18" /> {{ post.comments?.length || 0 }}
             </button>
           </div>
         </div>
@@ -73,7 +84,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Book, Heart, MessageCircle, PencilLine } from 'lucide-vue-next'
+import { Book, Eye, MessageCircle, PencilLine } from 'lucide-vue-next'
 import { usePosts } from '@/composables/usePosts'
 import { formatTimeAgo } from '@/utils/date'
 
@@ -92,6 +103,7 @@ onMounted(() => {
 })
 
 const goToWrite = () => router.push({ name: 'community-write', query: { mode: 'select' } })
+const goToCommunityDetail = (id) => router.push({ name: 'community-detail', params: { id: id } })
 const goToBookDetail = (isbn) => router.push({ name: 'book-detail', params: { isbn13: isbn } })
 </script>
 
@@ -154,6 +166,7 @@ const goToBookDetail = (isbn) => router.push({ name: 'book-detail', params: { is
   transition:
     transform 0.2s,
     box-shadow 0.2s;
+  cursor: pointer;
 }
 .post-card:hover {
   transform: translateY(-2px);
@@ -191,6 +204,7 @@ const goToBookDetail = (isbn) => router.push({ name: 'book-detail', params: { is
   font-size: 13px;
   color: #aaa;
 }
+
 .book-badge {
   display: inline-flex;
   align-items: center;
@@ -203,10 +217,12 @@ const goToBookDetail = (isbn) => router.push({ name: 'book-detail', params: { is
   font-weight: 600;
   margin-bottom: 16px;
   cursor: pointer;
+  border: none;
 }
 .book-badge:hover {
   background-color: #e0e7ff;
 }
+
 .post-title {
   font-size: 1.2rem;
   font-weight: 700;
@@ -239,10 +255,6 @@ const goToBookDetail = (isbn) => router.push({ name: 'book-detail', params: { is
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.2s;
-}
-.action-item:hover {
-  color: #111;
 }
 .fab-button {
   position: fixed;
