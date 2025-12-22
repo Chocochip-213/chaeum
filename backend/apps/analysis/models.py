@@ -4,7 +4,7 @@ from django.conf import settings
 
 class AnalysisResult(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE)
-    resume = models.ForeignKey('resumes.Resume', on_delete = models.CASCADE)
+    resume = models.ForeignKey('resumes.Resume', on_delete = models.SET_NULL, null = True)
     job_posting = models.ForeignKey('jobs.JobPosting', on_delete = models.CASCADE)
 
     # [JSON: user_analysis]
