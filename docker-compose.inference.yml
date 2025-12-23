@@ -1,16 +1,15 @@
 services:
-  inference-worker:
+  inference_service:
     build:
       context: ./inference
       dockerfile: Dockerfile
-    # GPU 워커 실행: 큐 이름 'inference', 단일 프로세스
-    command: celery -A tasks worker --loglevel=info -Q inference --concurrency=1 --pool=solos
+    ports:
+      - "8001:8000"
     volumes:
       - ./inference:/app
-      - ./inference_cache:/root/.cache/huggingface
     environment:
-      # [KEY] 외부에서 주입받을 Broker URL
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - BATCH_SIZE=64 # GPU 메모리가 넉넉하면 64~128 권장
+      - BATCH_TIMEOUT=0.1 # AWS <-> Local 지연 고려 (0.1초)
     deploy:
       resources:
         reservations:
@@ -18,3 +17,4 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [ gpu ]
+    restart: always
