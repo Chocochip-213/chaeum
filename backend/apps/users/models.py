@@ -22,6 +22,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True, verbose_name="가입일")
+    address = models.TextField(verbose_name="주소", blank=True, null=True)
 
     objects = UserManager()
 
@@ -32,17 +33,3 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_table = 'users'
         verbose_name = '사용자'
         verbose_name_plural = '사용자 목록'
-
-    CAMPUS_CHOICES = [
-        ('서울 캠퍼스', '서울 캠퍼스'),
-        ('대전 캠퍼스', '대전 캠퍼스'),
-        ('광주 캠퍼스', '광주 캠퍼스'),
-        ('구미 캠퍼스', '구미 캠퍼스'),
-        ('부울경 캠퍼스', '부울경 캠퍼스'),
-    ]
-    
-    campus = models.CharField(
-        max_length=10, 
-        choices=CAMPUS_CHOICES, 
-        verbose_name="캠퍼스"
-    )

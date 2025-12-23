@@ -12,17 +12,6 @@
             <input type="text" v-model="name" placeholder="이름" class="styled-input" required />
           </div>
           <div class="input-group">
-            <Building2 class="input-icon" :size="20" />
-            <select v-model="selectedCampus" class="styled-input custom-select" required>
-              <option value="서울 캠퍼스">서울 캠퍼스</option>
-              <option value="대전 캠퍼스">대전 캠퍼스</option>
-              <option value="구미 캠퍼스">구미 캠퍼스</option>
-              <option value="광주 캠퍼스">광주 캠퍼스</option>
-              <option value="부울경 캠퍼스">부울경 캠퍼스</option>
-            </select>
-            <ChevronDown class="arrow-icon" :size="20" />
-          </div>
-          <div class="input-group">
             <Mail class="input-icon" :size="20" />
             <input
               type="email"
@@ -69,7 +58,6 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const showPassword = ref(false)
 const name = ref('')
-const selectedCampus = ref('서울 캠퍼스')
 const email = ref('')
 const password = ref('')
 
@@ -79,7 +67,6 @@ const onSignup = async () => {
       email: email.value,
       password: password.value,
       nickname: name.value,
-      campus: selectedCampus.value,
     })
 
     router.push('/login')
