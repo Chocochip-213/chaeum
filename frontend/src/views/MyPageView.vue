@@ -326,7 +326,7 @@ const processFile = async (file) => {
       },
     })
 
-    resumeFileName.value = response.data.file_name
+    await fetchUserResumes()
   } catch (error) {
     console.error('이력서 업로드 실패:', error)
     alert('업로드 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
