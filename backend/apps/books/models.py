@@ -40,3 +40,18 @@ class TOCChunk(models.Model):
 
     class Meta:
         db_table = 'toc_chunks'
+
+
+class Store(models.Model):
+    name = models.CharField(max_length = 100)  # 예: 가로수길점
+    branch_code = models.CharField(max_length = 20, unique = True)  # 내부 관리 코드 (SEOUL_01)
+    off_code = models.CharField(max_length = 50, null = True, blank = True)  # 알라딘 API 매핑 코드 (Gangnam)
+    address = models.CharField(max_length = 255)
+    lat = models.FloatField(null = True)  # 위도
+    lon = models.FloatField(null = True)  # 경도
+
+    class Meta:
+        db_table = 'stores'
+
+    def __str__(self):
+        return self.name

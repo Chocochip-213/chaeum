@@ -61,7 +61,7 @@
               class="url-input"
               @focus="isUrlFocused = true"
               @blur="isUrlFocused = false"
-              @keydown.enter="handleAnalyze"
+              @keydown.enter="handleEnter"
             />
           </div>
           <button class="analyze-btn" @click="handleAnalyze" :disabled="!jobUrl || !resumeFileName">
@@ -73,10 +73,8 @@
       </section>
     </main>
 
-    <!-- 2. 게임 컴포넌트 (분석 중일 때만 표시) -->
     <Game v-if="isAnalyzing" @update-score="handleGameScore" />
 
-    <!-- 3. 결과 화면 (분석 완료 후 표시) -->
     <div v-if="showResult" class="result-container">
       <div class="result-box">
         <Sparkles :size="48" class="result-icon" />
@@ -96,7 +94,9 @@ import { ref, onMounted } from 'vue'
 import { FileText, Upload, Link as LinkIcon, Sparkles } from 'lucide-vue-next'
 import api from '@/api'
 import Game from '@/components/Game.vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const fileInputRef = ref(null)
 const isDragging = ref(false)
 const resumeFileName = ref('')
@@ -104,9 +104,11 @@ const resumeFileDate = ref('')
 
 const jobUrl = ref('')
 const isUrlFocused = ref(false)
+
 const isAnalyzing = ref(false)
 const showResult = ref(false)
 const gameScore = ref(0)
+const analysisResultId = ref(null)
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
@@ -131,18 +133,17 @@ const handleDrop = (event) => {
 
 const processFile = async (file) => {
   if (!file) return
+
   const formData = new FormData()
   formData.append('file', file)
 
   try {
-    const response = await api.post('/resumes/', formData, {
+    await api.post('/resumes/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     await fetchUserResumes()
-    alert('이력서가 등록되었습니다.')
   } catch (error) {
     console.error('이력서 업로드 실패:', error)
-    alert('업로드 중 오류가 발생했습니다.')
     if (fileInputRef.value) fileInputRef.value.value = ''
   }
 }
@@ -165,6 +166,18 @@ const handleGameScore = (score) => {
   gameScore.value = score
 }
 
+const checkPlatformUrl = (url) => {
+  const targetUrl = url.trim()
+  const isJumpit = targetUrl.includes('jumpit.saramin.co.kr/position/')
+  const isWanted = targetUrl.includes('wanted.co.kr/wd/')
+  return isJumpit || isWanted
+}
+
+const handleEnter = (e) => {
+  if (e.isComposing) return
+  handleAnalyze()
+}
+
 const handleAnalyze = async () => {
   if (!resumeFileName.value) {
     alert('먼저 이력서를 등록해주세요.')
@@ -174,23 +187,48 @@ const handleAnalyze = async () => {
     alert('채용 공고 URL을 입력해주세요.')
     return
   }
+  if (!checkPlatformUrl(jobUrl.value)) {
+    alert(
+      '지원하지 않는 플랫폼입니다.\n점핏(Jumpit) 또는 원티드(Wanted) 채용 공고 분석 가능합니다.',
+    )
+    jobUrl.value = ''
+    return
+  }
 
-  // 1. 분석 시작: 상태 변경 (입력폼 숨김, 게임 시작)
   isAnalyzing.value = true
   showResult.value = false
   gameScore.value = 0
-
   console.log('분석 시작:', jobUrl.value)
 
-  // 2. 10초 대기 후 결과 화면 전환
-  setTimeout(() => {
-    isAnalyzing.value = false // 게임 종료
-    showResult.value = true // 결과 화면 표시
-  }, 10000)
+  const formData = new FormData()
+  formData.append('job_posting_url', jobUrl.value.trim())
+
+  try {
+    const response = await api.post('/analysis/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    console.log('분석 결과:', response)
+
+    if (response.data && response.data.id) {
+      analysisResultId.value = response.data.id
+
+      isAnalyzing.value = false
+      showResult.value = true
+    } else {
+      throw new Error('ID 미반환')
+    }
+  } catch (error) {
+    console.error('분석 요청 실패:', error)
+    alert('분석 중 오류가 발생했습니다.')
+    isAnalyzing.value = false
+  }
 }
 
 const goToResult = () => {
-  alert('분석 결과 페이지로 이동합니다.')
+  if (analysisResultId.value) {
+    router.push({ name: 'analysis-result', params: { id: analysisResultId.value } })
+  }
 }
 
 onMounted(() => {
@@ -206,11 +244,9 @@ onMounted(() => {
   position: relative;
   min-height: 600px;
 }
-
 .community-header {
   margin-bottom: 40px;
 }
-
 .main-title {
   font-size: 28px;
   font-weight: 800;
@@ -218,36 +254,30 @@ onMounted(() => {
   margin-bottom: 8px;
   letter-spacing: -0.5px;
 }
-
 .sub-title {
   color: #666;
   font-size: 15px;
   line-height: 1.5;
 }
-
 .analysis-content {
   display: flex;
   flex-direction: column;
   gap: 40px;
 }
-
 .analysis-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
 .section-label {
   font-size: 16px;
   font-weight: 700;
   color: #111;
   margin: 0;
 }
-
 .hidden-input {
   display: none;
 }
-
 .upload-zone {
   position: relative;
   width: 100%;
@@ -263,25 +293,21 @@ onMounted(() => {
   overflow: hidden;
   box-sizing: border-box;
 }
-
 .upload-zone.dragging {
   border-color: #111;
   background-color: #f3f4f6;
   transform: scale(0.99);
 }
-
 .upload-zone.has-file {
   border: 1px solid #e5e7eb;
   background-color: white;
   justify-content: flex-start;
   padding: 0 24px;
 }
-
 .upload-placeholder {
   text-align: center;
   pointer-events: none;
 }
-
 .icon-circle {
   width: 40px;
   height: 40px;
@@ -294,27 +320,23 @@ onMounted(() => {
   margin: 0 auto 12px;
   color: #666;
 }
-
 .upload-main-text {
   font-size: 14px;
   font-weight: 600;
   color: #374151;
   margin: 0 0 4px 0;
 }
-
 .upload-sub-text {
   font-size: 12px;
   color: #9ca3af;
   margin: 0;
 }
-
 .file-exists-state {
   display: flex;
   align-items: center;
   width: 100%;
   gap: 16px;
 }
-
 .file-icon-wrapper {
   width: 52px;
   height: 52px;
@@ -326,7 +348,6 @@ onMounted(() => {
   color: #374151;
   flex-shrink: 0;
 }
-
 .file-info-text {
   display: flex;
   flex-direction: column;
@@ -335,7 +356,6 @@ onMounted(() => {
   overflow: hidden;
   gap: 2px;
 }
-
 .file-name {
   font-size: 15px;
   font-weight: 700;
@@ -344,7 +364,6 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .last-update {
   font-size: 13px;
   color: #4b5563;
@@ -353,13 +372,11 @@ onMounted(() => {
   font-size: 12px;
   color: #9ca3af;
 }
-
 .url-input-container {
   display: flex;
   gap: 12px;
   height: 52px;
 }
-
 .input-wrapper {
   flex: 1;
   display: flex;
@@ -370,19 +387,16 @@ onMounted(() => {
   padding: 0 16px;
   transition: all 0.2s ease;
 }
-
 .input-wrapper.focused {
   border-color: #111;
   background-color: #fff;
   box-shadow: 0 0 0 1px #111;
 }
-
 .input-icon {
   color: #9ca3af;
   margin-right: 12px;
   flex-shrink: 0;
 }
-
 .url-input {
   width: 100%;
   border: none;
@@ -391,11 +405,9 @@ onMounted(() => {
   color: #111;
   outline: none;
 }
-
 .url-input::placeholder {
   color: #9ca3af;
 }
-
 .analyze-btn {
   display: flex;
   align-items: center;
@@ -411,26 +423,22 @@ onMounted(() => {
   white-space: nowrap;
   transition: all 0.2s;
 }
-
 .analyze-btn:hover:not(:disabled) {
   background-color: #333;
   transform: translateY(-1px);
 }
-
 .analyze-btn:disabled {
   background-color: #e5e7eb;
   color: #9ca3af;
   cursor: not-allowed;
   transform: none;
 }
-
 .helper-text {
   font-size: 13px;
   color: #9ca3af;
   margin: 0;
   padding-left: 4px;
 }
-
 .result-container {
   display: flex;
   justify-content: center;
@@ -438,7 +446,6 @@ onMounted(() => {
   min-height: 400px;
   animation: fadeIn 0.5s ease;
 }
-
 .result-box {
   text-align: center;
   background-color: #fff;
@@ -451,31 +458,26 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
 }
-
 .result-icon {
   color: #111;
   margin-bottom: 8px;
   animation: bounce 1s infinite;
 }
-
 .result-title {
   font-size: 24px;
   font-weight: 800;
   color: #111;
   margin: 0;
 }
-
 .result-score {
   font-size: 18px;
   color: #4b5563;
   margin: 0 0 16px 0;
 }
-
 .result-score strong {
   color: #ef4444;
   font-size: 24px;
 }
-
 .result-btn {
   padding: 14px 32px;
   background-color: #111;
@@ -487,13 +489,11 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .result-btn:hover {
   background-color: #333;
   transform: translateY(-2px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -504,7 +504,6 @@ onMounted(() => {
     transform: translateY(0);
   }
 }
-
 @keyframes bounce {
   0%,
   100% {
@@ -514,17 +513,14 @@ onMounted(() => {
     transform: translateY(-10px);
   }
 }
-
 @media (max-width: 600px) {
   .url-input-container {
     flex-direction: column;
     height: auto;
   }
-
   .input-wrapper {
     padding: 16px;
   }
-
   .analyze-btn {
     width: 100%;
     height: 50px;

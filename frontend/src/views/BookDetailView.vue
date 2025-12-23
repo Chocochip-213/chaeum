@@ -26,16 +26,55 @@
           <p class="author-publisher">
             {{ book.author }} | {{ book.publisher }} | {{ book.pubDate }}
           </p>
+
           <div class="purchase-box">
             <div class="price-stock-row">
               <span class="price">{{ Number(book.priceSales).toLocaleString() }}원</span>
-              <span class="stock-badge"> 📍 {{ book.stockStatus }}: 재고 있음 (위치: C-21) </span>
+
+              <button class="check-stock-btn" @click="checkStock" :disabled="stockLoading">
+                <span v-if="stockLoading">위치 확인 중...</span>
+                <span v-else>내 주변 서점 재고 확인</span>
+              </button>
             </div>
+
+            <div v-if="showStockList" class="stock-result-box">
+              <div v-if="stockLoading" class="stock-loading">데이터를 불러오고 있습니다...</div>
+
+              <div v-else-if="stockInfo && stockInfo.stores.length > 0" class="store-list">
+                <div class="stock-summary">
+                  총 <strong>{{ stockInfo.count }}</strong
+                  >개의 서점이 발견되었습니다.
+                </div>
+                <div
+                  v-for="(store, idx) in stockInfo.stores.slice(0, 4)"
+                  :key="idx"
+                  class="store-item"
+                >
+                  <div class="store-info">
+                    <span class="store-name">{{ store.name }}</span>
+                    <span class="store-dist">{{ store.distance_km.toFixed(1) }}km</span>
+                  </div>
+                  <div class="store-status">
+                    <span class="status-badge" :class="{ 'in-stock': store.stock_status !== '0' }">
+                      {{ store.stock_status }}
+                    </span>
+                    <a v-if="store.link" :href="store.link" target="_blank" class="store-link"
+                      >위치보기</a
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div v-else-if="stockInfo" class="no-stock">재고가 있는 서점이 없습니다.</div>
+            </div>
+
             <a :href="book.link" target="_blank" class="buy-btn">
               온라인 서점 구매하기 (OutLink)
             </a>
           </div>
+
           <p class="description">{{ book.description }}</p>
+
           <div class="tag-section">
             <span v-for="(tag, index) in book.tags" :key="index" class="book-tag">
               {{ tag }}
@@ -77,7 +116,6 @@
             </div>
 
             <h3 class="post-title">{{ post.title }}</h3>
-
             <div class="card-content">{{ post.content }}</div>
 
             <div class="card-footer">
@@ -100,6 +138,7 @@
 </template>
 
 <script setup>
+import api from '@/api'
 import aladinApi from '@/api/aladin'
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -111,6 +150,43 @@ const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const book = ref({})
+const stockInfo = ref(null)
+const stockLoading = ref(false)
+const showStockList = ref(false)
+
+const checkStock = () => {
+  stockLoading.value = true
+  showStockList.value = true
+  stockInfo.value = null
+  if (!navigator.geolocation) {
+    alert('브라우저가 위치 정보를 지원하지 않습니다.')
+    stockLoading.value = false
+    return
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude
+      const lon = position.coords.longitude
+
+      try {
+        const response = await api.get(`/books/${route.params.isbn13}/stock/`, {
+          params: { lat: lat, lon: lon },
+        })
+        stockInfo.value = response.data
+      } catch (error) {
+        console.error('재고 조회 실패:', error)
+      } finally {
+        stockLoading.value = false
+      }
+    },
+    (err) => {
+      console.error(err)
+      alert('위치 정보를 허용해 주세요.')
+      stockLoading.value = false
+    },
+  )
+}
 
 const { posts, bookTitles, isLoading: isPostsLoading, fetchPosts } = usePosts()
 const goToPost = (id) => router.push({ name: 'community-detail', params: { id: id } })
@@ -150,7 +226,6 @@ const fetchBookDetail = async () => {
         cover: item.cover,
         categoryName: item.categoryName.split('>')[1] || 'General',
         link: item.link,
-        stockStatus: item.stockStatus || 'SSAFY 서울점',
         tags: tags.length > 0 ? tags : ['#개발', '#프로그래밍'],
         isbn13: item.isbn13,
       }
@@ -201,6 +276,12 @@ watch(
   margin: 0 auto;
   padding: 20px;
 }
+.loading-container,
+.status-msg {
+  text-align: center;
+  padding: 100px 0;
+  color: #888;
+}
 .back-link {
   color: #666;
   font-size: 0.9rem;
@@ -210,16 +291,18 @@ watch(
   align-items: center;
   gap: 5px;
 }
-.loading-container {
-  text-align: center;
-  padding: 100px;
-  color: #888;
-}
+
 .book-info-section {
   display: flex;
   gap: 40px;
   margin-bottom: 60px;
 }
+.book-details {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .book-cover {
   flex-shrink: 0;
   width: 280px;
@@ -257,11 +340,7 @@ watch(
   opacity: 0.3;
   line-height: 1.2;
 }
-.book-details {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
+
 .badge-row {
   margin-bottom: 12px;
 }
@@ -284,6 +363,25 @@ watch(
   color: #666;
   margin-bottom: 30px;
 }
+.description {
+  line-height: 1.6;
+  color: #444;
+  margin-bottom: 24px;
+}
+.tag-section {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.book-tag {
+  font-size: 0.85rem;
+  color: #4f46e5;
+  background-color: #eef2ff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
 .purchase-box {
   border: 1px solid #eee;
   border-radius: 12px;
@@ -303,14 +401,110 @@ watch(
   font-size: 1.5rem;
   font-weight: 700;
 }
-.stock-badge {
-  background-color: #e6f4ea;
+
+.check-stock-btn {
+  background-color: #fff;
+  border: 1px solid #1e8e3e;
   color: #1e8e3e;
-  padding: 6px 12px;
+  padding: 6px 16px;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.check-stock-btn:hover {
+  background-color: #e6f4ea;
+}
+.check-stock-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.stock-result-box {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #eee;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stock-summary {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.store-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.store-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+.store-info {
+  display: flex;
+  flex-direction: column;
+}
+.store-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #333;
+}
+.store-dist {
+  font-size: 0.8rem;
+  color: #888;
+}
+.store-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-badge {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #eee;
+  color: #666;
   font-weight: 600;
 }
+.status-badge.in-stock {
+  background-color: #e6f4ea;
+  color: #1e8e3e;
+}
+.store-link {
+  font-size: 0.8rem;
+  color: #4f46e5;
+  text-decoration: underline;
+}
+.no-stock,
+.stock-loading {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  padding: 10px;
+}
+
 .buy-btn {
   width: 100%;
   padding: 16px;
@@ -328,24 +522,7 @@ watch(
 .buy-btn:hover {
   background-color: #444;
 }
-.description {
-  line-height: 1.6;
-  color: #444;
-  margin-bottom: 24px;
-}
-.tag-section {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.book-tag {
-  font-size: 0.85rem;
-  color: #4f46e5;
-  background-color: #eef2ff;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-weight: 600;
-}
+
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -379,6 +556,7 @@ watch(
 .join-btn:hover {
   opacity: 0.7;
 }
+
 .thread-list {
   display: flex;
   flex-direction: column;
@@ -402,12 +580,11 @@ watch(
   text-align: center;
   color: #888;
   padding: 40px;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
 }
-.status-msg {
-  text-align: center;
-  color: #888;
-  padding: 20px;
-}
+
 .card-header {
   margin-bottom: 16px;
 }
@@ -466,10 +643,7 @@ watch(
 .actions {
   display: flex;
   gap: 16px;
-  font-size: 0.85rem;
-  color: #666;
 }
-
 .action-item {
   background: none;
   border: none;
@@ -480,7 +654,6 @@ watch(
   font-size: 14px;
   font-weight: 500;
 }
-
 .book-badge-sm {
   display: inline-block;
   background-color: #f3f4f6;
