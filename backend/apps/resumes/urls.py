@@ -3,9 +3,8 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
-router.register(r'posts', views.PostViewSet)
+router.register(r'', views.ResumeViewSet, basename='resume') # /api/resumes/
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('comments/my/', views.MyCommentListView.as_view(), name='my-comments'),
 ]

@@ -32,12 +32,20 @@ SECRET_KEY = 'django-insecure-bonq#=77^%ye$c0vy1$5okvh7gt4pqat9#hoid#%@&&it52fdp
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '15.164.52.217',
+    '127.0.0.1',
+    'localhost',
+    'chaeum.store',
+    'www.chaeum.store',
+    '.chaeum.store'
+]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'drf_spectacular',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -137,19 +145,25 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
 
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Final Project API',
+    'DESCRIPTION': 'SSAFY Final Project API Documentation',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+}
+
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    # TODO: 토큰 재발급 테스트를 위해 짧게 설정함. 테스트 이후 변경 필요!
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=5),
-    # 'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    # 'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -172,9 +186,17 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+GRADIO_URL = env('GRADIO_URL')
+
+# Celery Settings
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://redis:6379/0')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://redis:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Seoul'
+
 INFERENCE_API_URL = env('INFERENCE_API_URL')
 GRADIO_URL = env('GRADIO_URL')
-CELERY_BROKER_URL = env('CELERY_BROKER_URL')
-CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')
 ALADIN_TTB_KEY = env('ALADIN_TTB_KEY')
 KAKAO_REST_API_KEY = env('KAKAO_REST_API_KEY')

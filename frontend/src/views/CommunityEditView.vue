@@ -1,33 +1,12 @@
 <template>
   <div class="write-page-wrapper">
-    <div v-if="!selectedBook" class="step-search">
-      <div class="step-header">
-        <button class="close-btn" @click="$router.push({ name: 'community' })">
-          &lt; 독서 모임으로 돌아가기
-        </button>
-      </div>
-      <BookSearch mode="select" @select-book="handleSelectBook" />
-    </div>
-
-    <div v-else class="step-write animate-slide-up">
+    <div class="step-write animate-slide-up">
       <div class="write-container">
         <div class="top-nav">
-          <button class="back-link" @click="selectedBook = null">
-            <ChevronLeft :size="16" /> 책 다시 선택하기
+          <button class="back-link" @click="$router.back()">
+            <ChevronLeft :size="16" /> 뒤로 가기
           </button>
-          <h1 class="page-title">글 작성하기</h1>
-        </div>
-
-        <div class="selected-book-card">
-          <div class="book-cover">
-            <img :src="selectedBook.cover" :alt="selectedBook.title" />
-          </div>
-          <div class="book-info">
-            <span class="label">선택된 도서</span>
-            <h3 class="book-title">{{ selectedBook.title }}</h3>
-            <p class="book-author">{{ selectedBook.author || '저자 미상' }}</p>
-          </div>
-          <button class="change-btn" @click="selectedBook = null">변경</button>
+          <h1 class="page-title">글 수정하기</h1>
         </div>
 
         <div class="input-section">
@@ -47,20 +26,20 @@
           <div class="textarea-wrapper">
             <textarea
               v-model="content"
-              placeholder="이 책을 통해 어떤 인사이트를 얻으셨나요? 자유롭게 이야기를 나눠보세요."
+              placeholder="내용을 입력해주세요."
               class="content-textarea"
             ></textarea>
           </div>
         </div>
 
         <div class="button-group">
-          <button class="btn-cancel" @click="$router.push({ name: 'community' })">취소</button>
+          <button class="btn-cancel" @click="$router.back()">취소</button>
           <button
             class="btn-submit"
-            @click="handleSubmit"
+            @click="handleUpdate"
             :disabled="!content.trim() || !postTitle.trim()"
           >
-            <Send :size="16" /> 등록하기
+            <Check :size="16" /> 수정 완료
           </button>
         </div>
       </div>
@@ -71,47 +50,78 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ChevronLeft, Send } from 'lucide-vue-next'
+import { ChevronLeft, Check } from 'lucide-vue-next'
 import api from '@/api'
-import BookSearch from '@/components/BookSearch.vue'
+import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
+const { id: currentUserId } = storeToRefs(userStore)
 
-const selectedBook = ref(null)
+const postId = route.params.id
 const postTitle = ref('')
 const content = ref('')
 
-//  검색 컴포넌트에서 선택 시
-const handleSelectBook = (bookData) => {
-  selectedBook.value = bookData
-  window.scrollTo(0, 0)
+const post = ref(null)
+const isLoading = ref(true)
+
+const fetchPostDetail = async () => {
+  try {
+    const response = await api.get(`/community/posts/${postId}/`)
+    post.value = response.data
+
+    postTitle.value = post.value.title
+    content.value = post.value.content
+
+    checkPermission()
+  } catch (error) {
+    console.error('게시글 불러오기 실패:', error)
+    router.back()
+  } finally {
+    isLoading.value = false
+  }
 }
 
-const handleSubmit = async () => {
-  if (!content.value.trim() || !postTitle.value.trim()) return
+const checkPermission = () => {
+  if (!post.value || !currentUserId.value) return
+
+  const authorId = post.value.user_id
+
+  if (String(currentUserId.value) !== String(authorId)) {
+    alert('수정 권한이 없는 게시글입니다.')
+    router.replace({ name: 'community-detail', params: { id: postId } })
+  }
+}
+
+const handleUpdate = async () => {
+  if (!postTitle.value.trim() || !content.value.trim()) {
+    alert('제목과 내용을 모두 입력해주세요.')
+    return
+  }
 
   try {
-    await api.post('/community/posts/', {
-      book_isbn: selectedBook.value.isbn || selectedBook.value.isbn13,
+    await api.put(`/community/posts/${postId}/`, {
       title: postTitle.value,
       content: content.value,
     })
 
-    router.push({ name: 'community' })
+    router.replace({ name: 'community-detail', params: { id: postId } })
   } catch (error) {
-    console.error('글 등록 실패:', error)
+    console.error('글 수정 실패:', error)
   }
 }
 
-onMounted(() => {
-  if (route.query.isbn) {
-    selectedBook.value = {
-      isbn: route.query.isbn,
-      title: route.query.title,
-      cover: route.query.cover,
-      author: route.query.author,
-    }
+onMounted(async () => {
+  isLoading.value = true
+
+  if (!userStore.userInfo) {
+    await userStore.fetchUserProfile()
+  }
+
+  if (postId) {
+    await fetchPostDetail()
   }
 })
 </script>
@@ -120,23 +130,6 @@ onMounted(() => {
 .write-page-wrapper {
   width: 100%;
   min-height: 100vh;
-}
-.step-header {
-  max-width: 1024px;
-  margin: 0 auto;
-  padding: 20px 20px 0;
-}
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 0.95rem;
-  color: #666;
-  cursor: pointer;
-  font-weight: 600;
-}
-.close-btn:hover {
-  color: #111;
-  text-decoration: underline;
 }
 .write-container {
   max-width: 720px;
@@ -162,62 +155,6 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 700;
   color: #111;
-}
-.selected-book-card {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background-color: #f9fafb;
-  margin-bottom: 30px;
-}
-.book-cover {
-  width: 60px;
-  height: 87px;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid #eee;
-  background-color: #fff;
-  margin-right: 20px;
-  flex-shrink: 0;
-}
-.book-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.book-info {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.label {
-  font-size: 13px;
-  color: #d97706;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-.book-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111;
-  margin: 0 0 4px 0;
-}
-.book-author {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-.change-btn {
-  background: none;
-  border: none;
-  font-size: 14px;
-  color: #6b7280;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 8px;
 }
 
 .input-section {

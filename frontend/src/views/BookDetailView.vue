@@ -22,12 +22,10 @@
           <div class="badge-row">
             <span class="category-badge">{{ book.categoryName }}</span>
           </div>
-
           <h1 class="title">{{ book.title }}</h1>
           <p class="author-publisher">
             {{ book.author }} | {{ book.publisher }} | {{ book.pubDate }}
           </p>
-
           <div class="purchase-box">
             <div class="price-stock-row">
               <span class="price">{{ Number(book.priceSales).toLocaleString() }}원</span>
@@ -37,9 +35,7 @@
               온라인 서점 구매하기 (OutLink)
             </a>
           </div>
-
           <p class="description">{{ book.description }}</p>
-
           <div class="tag-section">
             <span v-for="(tag, index) in book.tags" :key="index" class="book-tag">
               {{ tag }}
@@ -53,29 +49,42 @@
           <h3 class="section-title">
             <MessageSquare :size="20" class="icon-title" /> 독서 모임 스레드
           </h3>
-
-          <button class="join-btn"><Plus :size="14" stroke-width="3" /> 모임 참여하기</button>
+          <button class="join-btn" @click="goToWrite">
+            <Plus :size="14" stroke-width="3" /> 모임 글 작성하기
+          </button>
         </div>
 
-        <div v-if="dummyThreads.length > 0" class="thread-list">
-          <div v-for="thread in dummyThreads" :key="thread.id" class="thread-card">
+        <div v-if="isPostsLoading" class="status-msg">관련 게시글을 불러오는 중입니다...</div>
+
+        <div v-else-if="posts.length > 0" class="thread-list">
+          <div v-for="post in posts" :key="post.id" class="thread-card" @click="goToPost(post.id)">
             <div class="card-header">
               <div class="user-profile">
-                <div class="avatar">{{ thread.username.charAt(0) }}</div>
+                <div class="avatar">{{ post.user_nickname?.charAt(0) || '?' }}</div>
                 <div class="user-info">
                   <div class="name-row">
-                    <span class="username">{{ thread.username }}</span>
+                    <span class="username">{{ post.user_nickname }}</span>
                   </div>
-                  <div class="meta-row">{{ thread.time }}</div>
+                  <div class="meta-row">{{ formatTimeAgo(post.created_at) }}</div>
                 </div>
               </div>
             </div>
-            <div class="card-content">{{ thread.content }}</div>
+
+            <div class="book-badge-sm">
+              <span class="book-title-text">
+                {{ bookTitles[post.book_isbn] || book.title }}
+              </span>
+            </div>
+
+            <h3 class="post-title">{{ post.title }}</h3>
+
+            <div class="card-content">{{ post.content }}</div>
+
             <div class="card-footer">
               <div class="actions">
-                <span class="action-item"> <Heart :size="16" /> {{ thread.likes }} </span>
+                <span class="action-item"> <Eye :size="16" /> {{ post.view_count }} </span>
                 <span class="action-item">
-                  <MessageSquare :size="16" /> {{ thread.comments }}
+                  <MessageSquare :size="16" /> {{ post.comments?.length || 0 }}
                 </span>
               </div>
             </div>
@@ -92,34 +101,19 @@
 
 <script setup>
 import aladinApi from '@/api/aladin'
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { Plus, MessageSquare, Heart } from 'lucide-vue-next'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Plus, MessageSquare, Eye } from 'lucide-vue-next'
+import { usePosts } from '@/composables/usePosts'
+import { formatTimeAgo } from '@/utils/date'
 
 const route = useRoute()
+const router = useRouter()
 const loading = ref(true)
 const book = ref({})
 
-const dummyThreads = ref([
-  {
-    id: 1,
-    username: '서주미',
-    time: '2시간 전',
-    content:
-      'AI 튜터가 설명해준 3장 함수 요약이 정말 좋네요. "함수는 한 가지만 해야 한다"는 원칙을 제 코드에 적용해보았습니다.',
-    likes: 24,
-    comments: 2,
-  },
-  {
-    id: 2,
-    username: '파이썬마스터',
-    time: '5시간 전',
-    content:
-      '이 책 처음 읽어보는데 생각보다 어렵네요 ㅠㅠ 다들 1장 깨끗한 코드 부분 어떻게 이해하셨나요?',
-    likes: 5,
-    comments: 8,
-  },
-])
+const { posts, bookTitles, isLoading: isPostsLoading, fetchPosts } = usePosts()
+const goToPost = (id) => router.push({ name: 'community-detail', params: { id: id } })
 
 const fetchBookDetail = async () => {
   try {
@@ -139,7 +133,6 @@ const fetchBookDetail = async () => {
 
     if (response.data.item && response.data.item.length > 0) {
       const item = response.data.item[0]
-
       const rawCategory = item.categoryName || ''
       const tags = rawCategory
         .split('>')
@@ -159,20 +152,47 @@ const fetchBookDetail = async () => {
         link: item.link,
         stockStatus: item.stockStatus || 'SSAFY 서울점',
         tags: tags.length > 0 ? tags : ['#개발', '#프로그래밍'],
+        isbn13: item.isbn13,
       }
-    } else {
-      console.error('책 정보를 찾을 수 없습니다.')
     }
   } catch (error) {
-    console.error('상세 데이터를 불러오지 못했습니다.', error)
+    console.error('상세 데이터 로드 실패:', error)
   } finally {
     loading.value = false
   }
 }
 
+const loadBookPosts = () => {
+  fetchPosts({
+    book_isbn: route.params.isbn13,
+    ordering: '-created_at',
+  })
+}
+
+const goToWrite = () => {
+  router.push({
+    name: 'community-write',
+    query: {
+      isbn: route.params.isbn13,
+      title: book.value.title,
+      cover: book.value.cover,
+      author: book.value.author,
+    },
+  })
+}
+
 onMounted(() => {
   fetchBookDetail()
+  loadBookPosts()
 })
+
+watch(
+  () => route.params.isbn13,
+  () => {
+    fetchBookDetail()
+    loadBookPosts()
+  },
+)
 </script>
 
 <style scoped>
@@ -181,7 +201,6 @@ onMounted(() => {
   margin: 0 auto;
   padding: 20px;
 }
-
 .back-link {
   color: #666;
   font-size: 0.9rem;
@@ -191,13 +210,11 @@ onMounted(() => {
   align-items: center;
   gap: 5px;
 }
-
 .loading-container {
   text-align: center;
   padding: 100px;
   color: #888;
 }
-
 .book-info-section {
   display: flex;
   gap: 40px;
@@ -240,13 +257,11 @@ onMounted(() => {
   opacity: 0.3;
   line-height: 1.2;
 }
-
 .book-details {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
 }
-
 .badge-row {
   margin-bottom: 12px;
 }
@@ -259,7 +274,6 @@ onMounted(() => {
   font-weight: 700;
   align-self: flex-start;
 }
-
 .title {
   font-size: 2rem;
   font-weight: 700;
@@ -270,7 +284,6 @@ onMounted(() => {
   color: #666;
   margin-bottom: 30px;
 }
-
 .purchase-box {
   border: 1px solid #eee;
   border-radius: 12px;
@@ -315,13 +328,11 @@ onMounted(() => {
 .buy-btn:hover {
   background-color: #444;
 }
-
 .description {
   line-height: 1.6;
   color: #444;
   margin-bottom: 24px;
 }
-
 .tag-section {
   display: flex;
   gap: 8px;
@@ -335,7 +346,6 @@ onMounted(() => {
   border-radius: 20px;
   font-weight: 600;
 }
-
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -353,7 +363,6 @@ onMounted(() => {
   gap: 8px;
   margin: 0;
 }
-
 .join-btn {
   background: none;
   border: none;
@@ -370,7 +379,6 @@ onMounted(() => {
 .join-btn:hover {
   opacity: 0.7;
 }
-
 .thread-list {
   display: flex;
   flex-direction: column;
@@ -381,13 +389,25 @@ onMounted(() => {
   border-radius: 12px;
   padding: 24px;
   background: white;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.thread-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
 }
 .empty-card {
   text-align: center;
   color: #888;
   padding: 40px;
 }
-
+.status-msg {
+  text-align: center;
+  color: #888;
+  padding: 20px;
+}
 .card-header {
   margin-bottom: 16px;
 }
@@ -425,6 +445,13 @@ onMounted(() => {
   font-size: 0.8rem;
   color: #888;
 }
+.post-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
 .card-content {
   font-size: 0.95rem;
   line-height: 1.6;
@@ -442,9 +469,28 @@ onMounted(() => {
   font-size: 0.85rem;
   color: #666;
 }
+
 .action-item {
+  background: none;
+  border: none;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  color: #888;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.book-badge-sm {
+  display: inline-block;
+  background-color: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+.book-title-text {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 600;
 }
 </style>

@@ -16,7 +16,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'id', 'user_nickname', 'title', 'content',
+            'user_id', 'id', 'user_nickname', 'title', 'content',
             'book_isbn', 'view_count', 'comments',
             'created_at', 'updated_at'
         ]
@@ -25,3 +25,12 @@ class PostSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+
+
+class MyCommentSerializer(serializers.ModelSerializer):
+    post_id = serializers.ReadOnlyField(source='post.id')
+    post_title = serializers.ReadOnlyField(source='post.title')
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'content', 'created_at', 'post_id', 'post_title']

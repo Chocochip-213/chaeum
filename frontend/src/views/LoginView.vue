@@ -3,7 +3,7 @@
     <AuthTemplate>
       <div class="login-form-container">
         <div class="header">
-          <h1>환영합니다! 👋</h1>
+          <h1>환영합니다!</h1>
           <p>오늘도 성장을 위해 돌아오셨군요.</p>
         </div>
         <form @submit.prevent="onLogin">

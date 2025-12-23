@@ -36,7 +36,7 @@
 
         <div class="btn-container">
           <template v-if="authStore.isLogin">
-            <div class="user-icon-wrapper" @click="">
+            <div class="user-icon-wrapper" @click="handleNavClick('profile')">
               <User :size="24" />
             </div>
           </template>
