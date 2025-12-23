@@ -17,6 +17,7 @@
         class="tab-item"
         :class="{ active: activeTab === tab.id }"
         @click="activeTab = tab.id"
+        type="button"
       >
         {{ tab.label }}
       </button>
@@ -29,16 +30,14 @@
         <div class="report-list">
           <div v-for="report in reports" :key="report.id" class="report-card">
             <div class="report-info">
-              <div class="report-meta">
-                <span class="company-badge">{{ report.company }}</span>
-                <span class="date">{{ report.date }}</span>
-              </div>
-              <h3 class="report-job">{{ report.jobTitle }}</h3>
+              <h3 class="report-job">
+                {{ report.company_name }} · {{ formatDate(report.created_at) }}
+              </h3>
               <p class="report-score">
-                적합도 {{ report.score }}% · 부족 역량 {{ report.missingSkills }}개
+                적합도 {{ report.score }}% · 부족 역량 {{ report.gap_missing_skills.length }}개
               </p>
             </div>
-            <button class="arrow-btn">
+            <button class="arrow-btn" type="button">
               <ChevronRight :size="20" />
             </button>
           </div>
@@ -51,6 +50,7 @@
             class="filter-btn"
             :class="{ active: activityFilter === 'posts' }"
             @click="activityFilter = 'posts'"
+            type="button"
           >
             내가 쓴 글
           </button>
@@ -58,22 +58,49 @@
             class="filter-btn"
             :class="{ active: activityFilter === 'comments' }"
             @click="activityFilter = 'comments'"
+            type="button"
           >
             작성 댓글
           </button>
         </div>
 
         <div class="activity-list">
-          <div v-for="post in myPosts" :key="post.id" class="activity-card">
-            <div class="activity-main">
-              <h3 class="post-title">{{ post.title }}</h3>
-              <span class="post-date">{{ post.date }}</span>
+          <template v-if="activityFilter === 'posts'">
+            <div v-if="myPosts.length === 0" class="empty-state">작성한 게시글이 없습니다.</div>
+            <div
+              v-else
+              v-for="post in myPosts"
+              :key="post.id"
+              class="activity-card hover-effect"
+              @click="router.push(`/community/${post.id}`)"
+            >
+              <div class="activity-main">
+                <h3 class="post-title">{{ post.title }}</h3>
+                <span class="post-date">{{ post.date }}</span>
+              </div>
+              <div class="activity-stats">
+                <span class="stat"><Eye :size="14" /> {{ post.views }}</span>
+                <span class="stat"><MessageSquare :size="14" /> {{ post.commentCount }}</span>
+              </div>
             </div>
-            <div class="activity-stats">
-              <span class="stat"><Eye :size="14" /> {{ post.likes }}</span>
-              <span class="stat"><MessageSquare :size="14" /> {{ post.comments }}</span>
+          </template>
+
+          <template v-if="activityFilter === 'comments'">
+            <div v-if="myComments.length === 0" class="empty-state">작성한 댓글이 없습니다.</div>
+            <div
+              v-else
+              v-for="comment in myComments"
+              :key="comment.id"
+              class="activity-card"
+              @click="router.push(`/community/${comment.post_id}`)"
+            >
+              <div class="activity-main">
+                <h3 class="post-date">{{ comment.post_title }}</h3>
+                <h3 class="post-title comment-content">{{ comment.content }}</h3>
+                <span class="post-date">{{ formatDate(comment.created_at) }}</span>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
       </section>
 
@@ -89,7 +116,7 @@
                   <FileText :size="16" />
                   <span>{{ resumeFileName }}</span>
                 </div>
-                <button class="btn-sm">변경</button>
+                <button class="btn-sm" type="button">변경</button>
               </div>
             </div>
           </div>
@@ -109,6 +136,7 @@
                   v-if="!isChangingPassword"
                   @click="isChangingPassword = true"
                   class="link-btn"
+                  type="button"
                 >
                   비밀번호 변경하기
                 </button>
@@ -134,9 +162,12 @@
                     @keydown.enter="handleChangePassword"
                   />
                   <div class="form-actions">
-                    <button @click="cancelPasswordChange" class="btn-cancel">취소</button>
-
-                    <button @click="handleChangePassword" class="btn-save">변경 완료</button>
+                    <button @click="cancelPasswordChange" class="btn-cancel" type="button">
+                      취소
+                    </button>
+                    <button @click="handleChangePassword" class="btn-save" type="button">
+                      변경 완료
+                    </button>
                   </div>
                 </div>
               </div>
@@ -144,7 +175,7 @@
 
             <div class="logout-section">
               <div class="divider"></div>
-              <button class="btn-logout" @click="handleLogout">
+              <button class="btn-logout" @click="handleLogout" type="button">
                 <LogOut :size="16" /> 로그아웃
               </button>
             </div>
@@ -163,7 +194,9 @@
               </p>
             </div>
           </div>
-          <button class="btn-danger-fill" @click="handleDeleteAccount">탈퇴하기</button>
+          <button class="btn-danger-fill" @click="handleDeleteAccount" type="button">
+            탈퇴하기
+          </button>
         </div>
       </section>
     </main>
@@ -171,8 +204,9 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import {
   BarChart2,
   ChevronRight,
@@ -184,24 +218,41 @@ import {
   AlertTriangle,
   Eye,
 } from 'lucide-vue-next'
-import { storeToRefs } from 'pinia'
-import api from '@/api'
 
+import api from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
-const activeTab = ref('settings')
+const route = useRoute()
+const userStore = useUserStore()
+const authStore = useAuthStore()
+const { nickname, email } = storeToRefs(userStore)
+
+const activeTab = ref(route.query.tab || 'settings')
 const activityFilter = ref('posts')
 const isChangingPassword = ref(false)
 const resumeFileName = ref('')
-
-const userStore = useUserStore()
-const authStore = useAuthStore()
-
-const { nickname, email } = storeToRefs(userStore)
-
+const myComments = ref([])
+const myPosts = ref([])
+const reports = ref([])
 const passwordForm = ref({ current: '', new: '', confirm: '' })
+
+watch(activeTab, (newTab) => {
+  router.replace({ query: { ...route.query, tab: newTab } })
+})
+
+const tabs = [
+  { id: 'report', label: '분석 리포트' },
+  { id: 'activities', label: '내 활동' },
+  { id: 'settings', label: '계정 설정' },
+]
+
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
+}
 
 const cancelPasswordChange = () => {
   isChangingPassword.value = false
@@ -228,11 +279,11 @@ const handleChangePassword = async () => {
     alert('비밀번호가 성공적으로 변경되었습니다.')
     cancelPasswordChange()
   } catch (error) {
-    console.log('비밀번호 변경 실패', error)
+    console.error('비밀번호 변경 실패', error)
 
-    if (error.response.data.old_password) {
+    if (error.response?.data?.old_password) {
       alert('현재 비밀번호가 일치하지 않습니다.')
-    } else if (error.response.data.new_password[0]) {
+    } else if (error.response?.data?.new_password?.[0]) {
       alert(error.response.data.new_password[0])
     } else {
       alert('비밀번호 변경 중 오류가 발생했습니다. 입력값을 확인해주세요.')
@@ -243,7 +294,6 @@ const handleChangePassword = async () => {
 const handleLogout = async () => {
   try {
     const refreshToken = localStorage.getItem('refreshToken')
-
     if (refreshToken) {
       await api.post('/users/logout/', { refresh: refreshToken })
     }
@@ -252,7 +302,6 @@ const handleLogout = async () => {
   } finally {
     authStore.logout()
     userStore.$reset()
-
     router.push({ name: 'home' })
   }
 }
@@ -264,10 +313,8 @@ const handleDeleteAccount = async () => {
 
   try {
     await api.delete('/users/delete/')
-
     authStore.logout()
     userStore.$reset()
-
     alert('회원 탈퇴가 완료되었습니다.')
     router.push({ name: 'home' })
   } catch (error) {
@@ -276,56 +323,65 @@ const handleDeleteAccount = async () => {
   }
 }
 
+const fetchMyPosts = async () => {
+  try {
+    const response = await api.get('/community/posts/my/')
+    myPosts.value = response.data.map((post) => ({
+      id: post.id,
+      title: post.title,
+      date: formatDate(post.created_at),
+      views: post.view_count,
+      commentCount: post.comments.length,
+    }))
+  } catch (error) {
+    console.error('내 글 조회 중 오류 발생:', error)
+  }
+}
+
 const fetchUserResumes = async () => {
   try {
     const response = await api.get('/resumes/')
-
     if (response.data && response.data.length > 0) {
       resumeFileName.value = response.data[0].file_name || '이력서 파일이 업로드되지 않았습니다.'
     } else {
       resumeFileName.value = '이력서 파일이 업로드되지 않았습니다.'
     }
   } catch (error) {
-    console.log('이력서 조회 중 오류 발생:', error)
+    console.error('이력서 조회 중 오류 발생:', error)
     resumeFileName.value = '정보를 불러오지 못했습니다.'
   }
 }
-const tabs = [
-  { id: 'report', label: '분석 리포트' },
-  { id: 'activities', label: '내 활동' },
-  { id: 'settings', label: '계정 설정' },
-]
 
-const reports = ref([
-  {
-    id: 1,
-    company: 'Toss',
-    date: '2024.05.20',
-    jobTitle: 'Frontend Developer',
-    score: 72,
-    missingSkills: 2,
-  },
-  {
-    id: 2,
-    company: 'Naver',
-    date: '2024.05.15',
-    jobTitle: 'Backend Engineer',
-    score: 65,
-    missingSkills: 2,
-  },
-  { id: 3, company: 'Karrot', date: '2024.05.01', jobTitle: 'SRE', score: 45, missingSkills: 2 },
-])
+const fetchMyComments = async () => {
+  try {
+    const response = await api.get('/community/comments/my/')
+    if (response.data) {
+      myComments.value = response.data
+    }
+  } catch (error) {
+    console.error('내 댓글 조회 중 오류 발생:', error)
+  }
+}
 
-const myPosts = ref([
-  { id: 1, title: '클린코드 3장 함수 요약 정리', date: '2024.05.21', likes: 5, comments: 2 },
-  { id: 2, title: '면접 스터디 모집합니다 (서울캠)', date: '2024.05.18', likes: 8, comments: 12 },
-])
+const fetchAnalysisHistory = async () => {
+  try {
+    const response = await api.get('/analysis/history/')
+    if (response.data) {
+      reports.value = response.data
+    }
+  } catch (error) {
+    console.error('리포트 조회 중 오류 발생:', error)
+  }
+}
 
 onMounted(() => {
   if (!userStore.userInfo) {
     userStore.fetchUserProfile()
   }
   fetchUserResumes()
+  fetchMyComments()
+  fetchMyPosts()
+  fetchAnalysisHistory()
 })
 </script>
 
@@ -343,6 +399,7 @@ onMounted(() => {
   gap: 24px;
   margin-bottom: 40px;
 }
+
 .profile-avatar-lg {
   width: 100px;
   height: 100px;
@@ -355,11 +412,13 @@ onMounted(() => {
   font-weight: 700;
   color: #4b5563;
 }
+
 .profile-name {
   font-size: 32px;
   font-weight: 800;
   margin: 0 0 8px 0;
 }
+
 .profile-email {
   font-size: 16px;
   color: #666;
@@ -372,6 +431,7 @@ onMounted(() => {
   border-bottom: 1px solid #eee;
   margin-bottom: 40px;
 }
+
 .tab-item {
   background: none;
   border: none;
@@ -382,9 +442,11 @@ onMounted(() => {
   cursor: pointer;
   position: relative;
 }
+
 .tab-item.active {
   color: #111;
 }
+
 .tab-item.active::after {
   content: '';
   position: absolute;
@@ -409,6 +471,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 16px;
 }
+
 .report-card {
   display: flex;
   justify-content: space-between;
@@ -419,43 +482,30 @@ onMounted(() => {
   background-color: white;
   transition: box-shadow 0.2s;
 }
+
 .report-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
-.report-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.company-badge {
-  background-color: #f3f4f6;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #333;
-}
-.date {
-  font-size: 13px;
-  color: #888;
-}
+
 .report-job {
   font-size: 18px;
   font-weight: 700;
   margin: 0 0 6px 0;
 }
+
 .report-score {
   font-size: 14px;
   color: #666;
   margin: 0;
 }
+
 .arrow-btn {
   background: none;
   border: none;
   color: #ccc;
   cursor: pointer;
 }
+
 .arrow-btn:hover {
   color: #111;
 }
@@ -465,6 +515,7 @@ onMounted(() => {
   gap: 12px;
   margin-bottom: 20px;
 }
+
 .filter-btn {
   padding: 8px 16px;
   border-radius: 20px;
@@ -475,16 +526,19 @@ onMounted(() => {
   color: #666;
   cursor: pointer;
 }
+
 .filter-btn.active {
   background-color: #111;
   color: white;
   border-color: #111;
 }
+
 .activity-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
+
 .activity-card {
   display: flex;
   justify-content: space-between;
@@ -492,26 +546,54 @@ onMounted(() => {
   border: 1px solid #eee;
   border-radius: 12px;
   padding: 20px;
+  background-color: #fff;
 }
+
+.activity-card.hover-effect {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.activity-card.hover-effect:hover {
+  background-color: #f9fafb;
+}
+
 .post-title {
   font-size: 16px;
   font-weight: 700;
   margin: 0 0 6px 0;
 }
+
 .post-date {
   font-size: 13px;
   color: #888;
 }
+
+.comment-content {
+  font-weight: 500;
+  color: #333;
+}
+
 .activity-stats {
   display: flex;
   gap: 12px;
   color: #666;
   font-size: 13px;
 }
+
 .stat {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 0;
+  color: #888;
+  font-size: 14px;
+  background-color: #f9fafb;
+  border-radius: 12px;
 }
 
 .settings-grid {
@@ -520,12 +602,14 @@ onMounted(() => {
   gap: 24px;
   margin-bottom: 40px;
 }
+
 .settings-card {
   border: 1px solid #eee;
   border-radius: 12px;
   padding: 24px;
   background-color: white;
 }
+
 .column-card {
   display: flex;
   flex-direction: column;
@@ -541,12 +625,15 @@ onMounted(() => {
   margin-bottom: 24px;
   margin-top: 0;
 }
+
 .form-group {
   margin-bottom: 24px;
 }
+
 .form-group:last-child {
   margin-bottom: 0;
 }
+
 .form-group label {
   display: block;
   font-size: 13px;
@@ -554,6 +641,7 @@ onMounted(() => {
   color: #666;
   margin-bottom: 8px;
 }
+
 .file-input-box {
   display: flex;
   justify-content: space-between;
@@ -562,6 +650,7 @@ onMounted(() => {
   padding: 12px;
   border-radius: 8px;
 }
+
 .file-info {
   display: flex;
   align-items: center;
@@ -569,6 +658,7 @@ onMounted(() => {
   font-size: 14px;
   color: #333;
 }
+
 .btn-sm {
   font-size: 13px;
   font-weight: 600;
@@ -577,6 +667,7 @@ onMounted(() => {
   cursor: pointer;
   color: #111;
 }
+
 .input-readonly {
   width: 100%;
   padding: 12px;
@@ -587,6 +678,7 @@ onMounted(() => {
   outline: none;
   box-sizing: border-box;
 }
+
 .link-btn {
   background: none;
   border: none;
@@ -606,6 +698,7 @@ onMounted(() => {
   border-radius: 8px;
   margin-top: 8px;
 }
+
 .input-field {
   width: 100%;
   padding: 12px;
@@ -618,14 +711,17 @@ onMounted(() => {
   box-sizing: border-box;
   transition: border-color 0.2s;
 }
+
 .input-field:focus {
   border-color: #111;
 }
+
 .form-actions {
   display: flex;
   gap: 8px;
   margin-top: 8px;
 }
+
 .btn-cancel {
   flex: 1;
   padding: 10px;
@@ -637,6 +733,7 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
 }
+
 .btn-save {
   flex: 1;
   padding: 10px;
@@ -652,11 +749,13 @@ onMounted(() => {
 .logout-section {
   margin-top: 32px;
 }
+
 .divider {
   height: 1px;
   background-color: #eee;
   margin-bottom: 16px;
 }
+
 .btn-logout {
   width: 100%;
   display: flex;
@@ -673,6 +772,7 @@ onMounted(() => {
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
 .btn-logout:hover {
   background-color: #f3f4f6;
   color: #111;
@@ -687,11 +787,13 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
 }
+
 .danger-header {
   display: flex;
   gap: 16px;
   align-items: center;
 }
+
 .danger-icon-wrapper {
   width: 40px;
   height: 40px;
@@ -702,17 +804,20 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
 }
+
 .danger-title {
   color: #b91c1c;
   font-size: 16px;
   font-weight: 700;
   margin: 0 0 4px 0;
 }
+
 .danger-desc {
   font-size: 14px;
   color: #7f1d1d;
   margin: 0;
 }
+
 .btn-danger-fill {
   background-color: #dc2626;
   border: 1px solid #dc2626;
@@ -725,6 +830,7 @@ onMounted(() => {
   white-space: nowrap;
   transition: background-color 0.2s;
 }
+
 .btn-danger-fill:hover {
   background-color: #b91c1c;
 }
