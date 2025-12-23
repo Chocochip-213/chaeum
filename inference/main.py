@@ -5,10 +5,19 @@ from sentence_transformers import SentenceTransformer
 import torch
 import logging
 import time
+import sys
 
 # Configure logging
-logging.basicConfig(level = logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,  # 모든 로그 다 출력
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 logger = logging.getLogger(__name__)
+# 외부 라이브러리 로그 레벨 조정 (너무 시끄러운 건 줄이고, 필요한 건 키움)
+logging.getLogger("urllib3").setLevel(logging.DEBUG)  # 네트워크 요청 확인 (다운로드 멈춤 확인용)
+logging.getLogger("sentence_transformers").setLevel(logging.DEBUG) # 모델 로딩 상세
+logging.getLogger("torch").setLevel(logging.INFO)
 
 app = FastAPI()
 
@@ -33,17 +42,24 @@ async def startup_event():
 
 async def load_model():
     global model
+    logger.debug(">>> load_model() function started")  # [추가]
     logger.info("Loading model jhgan/ko-sroberta-multitask...")
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     logger.info(f"Using device: {device}")
+
     try:
+        # 다운로드 시작 알림
+        logger.info("Downloading/Loading model... (Check network activity)")
+
         # Run model loading in a thread
-        model = await asyncio.to_thread(SentenceTransformer, 'jhgan/ko-sroberta-multitask', device = device)
+        model = await asyncio.to_thread(SentenceTransformer, 'jhgan/ko-sroberta-multitask', device=device)
+
         logger.info("Model loaded successfully.")
+        logger.debug(f"Model Info: {model}")  # [추가]
+
     except Exception as e:
-        logger.error(f"Failed to load model: {e}")
-        # We don't raise here to keep the server running for healthchecks
-        # The /embed endpoint will fail until model is loaded or if loading failed
+        logger.error(f"Failed to load model: {e}", exc_info=True)  # [추가] exc_info=True로 에러 스택트레이스 출력
 
 
 async def process_batches():
