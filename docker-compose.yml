@@ -1,15 +1,4 @@
 services:
-#  db:
-#    image: pgvector/pgvector:pg16
-#    volumes:
-#      - postgres_data:/var/lib/postgresql/data/
-#    environment:
-#      - POSTGRES_USER=postgres
-#      - POSTGRES_PASSWORD=postgres
-#      - POSTGRES_DB=bookroad
-#    ports:
-#      - "5432:5432"
-
   # Redis
   redis:
     image: redis:7.2-alpine
