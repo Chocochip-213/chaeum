@@ -22,6 +22,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True, verbose_name="가입일")
+    address = models.TextField(verbose_name="주소", blank=True, null=True)
 
     objects = UserManager()
 
