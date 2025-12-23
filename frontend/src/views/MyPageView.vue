@@ -131,10 +131,12 @@
                     v-model="passwordForm.confirm"
                     placeholder="새 비밀번호 확인"
                     class="input-field"
+                    @keydown.enter="handleChangePassword"
                   />
                   <div class="form-actions">
                     <button @click="cancelPasswordChange" class="btn-cancel">취소</button>
-                    <button class="btn-save">변경 완료</button>
+
+                    <button @click="handleChangePassword" class="btn-save">변경 완료</button>
                   </div>
                 </div>
               </div>
@@ -203,6 +205,38 @@ const passwordForm = ref({ current: '', new: '', confirm: '' })
 const cancelPasswordChange = () => {
   isChangingPassword.value = false
   passwordForm.value = { current: '', new: '', confirm: '' }
+}
+
+const handleChangePassword = async () => {
+  if (!passwordForm.value.current || !passwordForm.value.new || !passwordForm.value.confirm) {
+    alert('모든 항목을 입력해주세요.')
+    return
+  }
+
+  if (passwordForm.value.new != passwordForm.value.confirm) {
+    alert('새 비밀번호가 일치하지 않습니다.')
+    return
+  }
+
+  try {
+    await api.post('/users/password/change/', {
+      old_password: passwordForm.value.current,
+      new_password: passwordForm.value.new,
+    })
+
+    alert('비밀번호가 성공적으로 변경되었습니다.')
+    cancelPasswordChange()
+  } catch (error) {
+    console.log('비밀번호 변경 실패', error)
+
+    if (error.response.data.old_password) {
+      alert('현재 비밀번호가 일치하지 않습니다.')
+    } else if (error.response.data.new_password[0]) {
+      alert(error.response.data.new_password[0])
+    } else {
+      alert('비밀번호 변경 중 오류가 발생했습니다. 입력값을 확인해주세요.')
+    }
+  }
 }
 
 const handleLogout = async () => {
