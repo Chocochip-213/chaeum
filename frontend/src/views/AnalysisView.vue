@@ -61,7 +61,7 @@
               class="url-input"
               @focus="isUrlFocused = true"
               @blur="isUrlFocused = false"
-              @keydown.enter="handleAnalyze"
+              @keydown.enter="handleEnter"
             />
           </div>
           <button class="analyze-btn" @click="handleAnalyze" :disabled="!jobUrl || !resumeFileName">
@@ -79,7 +79,9 @@
 import { ref, onMounted } from 'vue'
 import { FileText, Upload, Link as LinkIcon, Sparkles } from 'lucide-vue-next'
 import api from '@/api'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const fileInputRef = ref(null)
 const isDragging = ref(false)
 const resumeFileName = ref('')
@@ -115,7 +117,7 @@ const processFile = async (file) => {
   formData.append('file', file)
 
   try {
-    const response = await api.post('/resumes/', formData, {
+    await api.post('/resumes/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     await fetchUserResumes()
@@ -141,6 +143,18 @@ const fetchUserResumes = async () => {
   }
 }
 
+const checkPlatformUrl = (url) => {
+  const targetUrl = url.trim()
+  const isJumpit = targetUrl.includes('jumpit.saramin.co.kr/position/')
+  const isWanted = targetUrl.includes('wanted.co.kr/wd/')
+  return isJumpit || isWanted
+}
+
+const handleEnter = (e) => {
+  if (e.isComposing) return
+  handleAnalyze()
+}
+
 const handleAnalyze = async () => {
   if (!resumeFileName.value) {
     alert('먼저 이력서를 등록해주세요.')
@@ -151,9 +165,30 @@ const handleAnalyze = async () => {
     return
   }
 
-  // TODO: 실제 분석 API 호출 로직 작성
-  console.log('분석 시작:', jobUrl.value)
-  alert('로딩 시작')
+  if (!checkPlatformUrl(jobUrl.value)) {
+    alert(
+      '지원하지 않는 플랫폼입니다.\n점핏(Jumpit) 또는 원티드(Wanted) 채용 공고 분석 가능합니다.',
+    )
+    jobUrl.value = ''
+    return
+  }
+
+  const formData = new FormData()
+  formData.append('job_posting_url', jobUrl.value.trim())
+
+  try {
+    const response = await api.post('/analysis/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    console.log('분석 결과:', response)
+
+    if (response.data && response.data.id) {
+      router.push({ name: 'analysis-result', params: { id: response.data.id } })
+    }
+  } catch (error) {
+    console.error('분석 요청 실패:', error)
+  }
 }
 
 onMounted(() => {
@@ -190,10 +225,9 @@ onMounted(() => {
 .analysis-content {
   display: flex;
   flex-direction: column;
-  gap: 40px; /* 섹션 간 간격 */
+  gap: 40px;
 }
 
-/* 섹션 공통 스타일 */
 .analysis-section {
   display: flex;
   flex-direction: column;
@@ -207,7 +241,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* --- 1. 이력서 업로드 스타일 --- */
 .hidden-input {
   display: none;
 }

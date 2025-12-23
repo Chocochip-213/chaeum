@@ -320,7 +320,7 @@ const processFile = async (file) => {
   formData.append('file', file)
 
   try {
-    const response = await api.post('/resumes/', formData, {
+    await api.post('/resumes/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
