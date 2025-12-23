@@ -111,12 +111,40 @@
 
             <div class="form-group">
               <label>내 이력서</label>
-              <div class="file-input-box">
-                <div class="file-info">
-                  <FileText :size="16" />
-                  <span>{{ resumeFileName }}</span>
+
+              <input
+                type="file"
+                ref="fileInputRef"
+                class="hidden-input"
+                accept=".pdf"
+                @change="handleFileChange"
+              />
+
+              <div
+                class="upload-zone"
+                :class="{ dragging: isDragging, 'has-file': !!resumeFileName }"
+                @dragover.prevent="isDragging = true"
+                @dragleave.prevent="isDragging = false"
+                @drop.prevent="handleDrop"
+                @click="triggerFileInput"
+              >
+                <div v-if="resumeFileName" class="file-exists-state">
+                  <div class="file-icon-wrapper">
+                    <FileText :size="24" class="file-icon" />
+                  </div>
+                  <div class="file-info-text">
+                    <span class="file-name">{{ resumeFileName }}</span>
+                    <span class="file-action-text">클릭하거나 파일을 드래그하여 변경</span>
+                  </div>
                 </div>
-                <button class="btn-sm" type="button">변경</button>
+
+                <div v-else class="upload-placeholder">
+                  <div class="icon-circle">
+                    <Upload :size="20" />
+                  </div>
+                  <p class="upload-main-text">이력서를 드래그하거나 클릭하여 업로드</p>
+                  <p class="upload-sub-text">PDF</p>
+                </div>
               </div>
             </div>
           </div>
@@ -217,6 +245,7 @@ import {
   LogOut,
   AlertTriangle,
   Eye,
+  Upload,
 } from 'lucide-vue-next'
 
 import api from '@/api'
@@ -237,6 +266,8 @@ const myComments = ref([])
 const myPosts = ref([])
 const reports = ref([])
 const passwordForm = ref({ current: '', new: '', confirm: '' })
+const fileInputRef = ref(null)
+const isDragging = ref(false)
 
 watch(activeTab, (newTab) => {
   router.replace({ query: { ...route.query, tab: newTab } })
@@ -257,6 +288,47 @@ const formatDate = (dateString) => {
 const cancelPasswordChange = () => {
   isChangingPassword.value = false
   passwordForm.value = { current: '', new: '', confirm: '' }
+}
+
+const triggerFileInput = () => {
+  fileInputRef.value.click()
+}
+
+const handleFileChange = (event) => {
+  const files = event.target.files
+  if (files.length > 0) {
+    processFile(files[0])
+  }
+}
+
+const handleDrop = (event) => {
+  isDragging.value = false
+  const files = event.dataTransfer.files
+  if (files.length > 0) {
+    processFile(files[0])
+  }
+}
+
+const processFile = async (file) => {
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const response = await api.post('/resumes/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    resumeFileName.value = response.data.file_name
+  } catch (error) {
+    console.error('이력서 업로드 실패:', error)
+    alert('업로드 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+
+    if (fileInputRef.value) fileInputRef.value.value = ''
+  }
 }
 
 const handleChangePassword = async () => {
@@ -342,16 +414,14 @@ const fetchUserResumes = async () => {
   try {
     const response = await api.get('/resumes/')
     if (response.data && response.data.length > 0) {
-      resumeFileName.value = response.data[0].file_name || '이력서 파일이 업로드되지 않았습니다.'
+      resumeFileName.value = response.data[0].file_name
     } else {
-      resumeFileName.value = '이력서 파일이 업로드되지 않았습니다.'
+      resumeFileName.value = ''
     }
   } catch (error) {
     console.error('이력서 조회 중 오류 발생:', error)
-    resumeFileName.value = '정보를 불러오지 못했습니다.'
   }
 }
-
 const fetchMyComments = async () => {
   try {
     const response = await api.get('/community/comments/my/')
@@ -642,30 +712,109 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
-.file-input-box {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.hidden-input {
+  display: none;
+}
+
+.upload-zone {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
   background-color: #f9fafb;
-  padding: 12px;
-  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.file-info {
+.upload-zone.dragging {
+  border-color: #111;
+  background-color: #f3f4f6;
+  transform: scale(0.99);
+}
+
+.upload-zone.has-file {
+  border: 1px solid #e5e7eb;
+  background-color: white;
+  justify-content: flex-start;
+  padding: 0 24px;
+}
+
+.upload-placeholder {
+  text-align: center;
+  pointer-events: none;
+}
+
+.icon-circle {
+  width: 40px;
+  height: 40px;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #333;
+  justify-content: center;
+  margin: 0 auto 12px;
+  color: #666;
 }
 
-.btn-sm {
-  font-size: 13px;
+.upload-main-text {
+  font-size: 14px;
   font-weight: 600;
-  border: none;
-  background: none;
-  cursor: pointer;
+  color: #374151;
+  margin: 0 0 4px 0;
+}
+
+.upload-sub-text {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.file-exists-state {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+.file-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #111;
+  flex-shrink: 0;
+}
+
+.file-info-text {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-action-text {
+  font-size: 12px;
+  color: #6b7280;
 }
 
 .input-readonly {
