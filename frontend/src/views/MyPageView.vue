@@ -142,7 +142,9 @@
 
             <div class="logout-section">
               <div class="divider"></div>
-              <button class="btn-logout"><LogOut :size="16" /> 로그아웃</button>
+              <button class="btn-logout" @click="handleLogout">
+                <LogOut :size="16" /> 로그아웃
+              </button>
             </div>
           </div>
         </div>
@@ -159,7 +161,7 @@
               </p>
             </div>
           </div>
-          <button class="btn-danger-fill">탈퇴하기</button>
+          <button class="btn-danger-fill" @click="handleDeleteAccount">탈퇴하기</button>
         </div>
       </section>
     </main>
@@ -168,6 +170,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   BarChart2,
   ChevronRight,
@@ -179,25 +182,63 @@ import {
   AlertTriangle,
   Eye,
 } from 'lucide-vue-next'
-import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
+import api from '@/api'
 
+import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
 const activeTab = ref('settings')
 const activityFilter = ref('posts')
 const isChangingPassword = ref(false)
 
 const userStore = useUserStore()
+const authStore = useAuthStore()
+
 const { nickname, email } = storeToRefs(userStore)
 
-const passwordForm = ref({
-  current: '',
-  new: '',
-  confirm: '',
-})
+const passwordForm = ref({ current: '', new: '', confirm: '' })
 
 const cancelPasswordChange = () => {
   isChangingPassword.value = false
   passwordForm.value = { current: '', new: '', confirm: '' }
+}
+
+const handleLogout = async () => {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken')
+
+    if (refreshToken) {
+      await api.post('/users/logout/', { refresh: refreshToken })
+    }
+  } catch (error) {
+    console.error('로그아웃 API 호출 실패:', error)
+  } finally {
+    authStore.logout()
+    userStore.$reset()
+
+    router.push({ name: 'home' })
+  }
+}
+
+const handleDeleteAccount = async () => {
+  if (!confirm('정말로 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    return
+  }
+
+  try {
+    await api.delete('/users/delete/')
+
+    authStore.logout()
+    userStore.$reset()
+
+    alert('회원 탈퇴가 완료되었습니다.')
+    router.push({ name: 'home' })
+  } catch (error) {
+    console.error('회원 탈퇴 실패:', error)
+    alert('회원 탈퇴 중 오류가 발생했습니다. 다시 시도해 주세요.')
+  }
 }
 
 const tabs = [
@@ -211,7 +252,7 @@ const reports = ref([
     id: 1,
     company: 'Toss',
     date: '2024.05.20',
-    jobTitle: '토스(Toss) Frontend Developer',
+    jobTitle: 'Frontend Developer',
     score: 72,
     missingSkills: 2,
   },
@@ -219,18 +260,11 @@ const reports = ref([
     id: 2,
     company: 'Naver',
     date: '2024.05.15',
-    jobTitle: '네이버(Naver) Backend Engineer',
+    jobTitle: 'Backend Engineer',
     score: 65,
     missingSkills: 2,
   },
-  {
-    id: 3,
-    company: 'Karrot',
-    date: '2024.05.01',
-    jobTitle: '당근마켓 SRE',
-    score: 45,
-    missingSkills: 2,
-  },
+  { id: 3, company: 'Karrot', date: '2024.05.01', jobTitle: 'SRE', score: 45, missingSkills: 2 },
 ])
 
 const myPosts = ref([
