@@ -2,13 +2,13 @@
   <div class="search-page-container" :class="{ invisible: isRestoring }">
     <div class="header-section" id="top-anchor">
       <h1 class="main-title">
-        {{ mode === 'select' ? '글을 작성할 책을 선택해주세요' : '도서 검색' }}
+        {{ mode === 'select' ? '글을 작성할 책을 선택해 주세요' : '도서 검색' }}
       </h1>
       <p class="sub-title">
         {{
           mode === 'select'
             ? '어떤 책에 대한 이야기를 나누고 싶으신가요?'
-            : '알라딘 DB를 통해 원하는 책을 찾아보세요.'
+            : '읽고 싶은 책이나 궁금한 도서를 검색해 보세요.'
         }}
       </p>
     </div>

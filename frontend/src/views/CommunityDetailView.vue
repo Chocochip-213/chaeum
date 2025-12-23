@@ -19,6 +19,7 @@
               <span class="time">{{ formatTimeAgo(post.created_at) }}</span>
             </div>
           </div>
+
           <div class="post-header-actions">
             <div v-if="isMine" class="action-buttons">
               <button class="btn-text edit" @click="goToEdit">수정</button>
@@ -42,10 +43,10 @@
         </div>
 
         <div class="card-footer">
-          <button class="action-btn">
+          <div class="stat-item">
             <Eye :size="18" />
             <span>{{ post.view_count }}</span>
-          </button>
+          </div>
         </div>
       </article>
 
@@ -55,28 +56,25 @@
           댓글 <span class="count">{{ post.comments?.length || 0 }}</span>
         </h3>
 
-        <div class="comment-form">
-          <div class="avatar sm">나</div>
-          <div class="input-wrapper">
-            <input
-              type="text"
-              v-model="newCommentContent"
-              placeholder="따뜻한 댓글을 남겨주세요..."
-              @keydown.enter.prevent="submitComment($event)"
-            />
-
-            <button
-              class="send-btn"
-              :disabled="!newCommentContent.trim() || isSubmitting"
-              @click="submitComment"
-            >
-              <Send :size="18" />
-            </button>
-          </div>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            v-model="newCommentContent"
+            placeholder="성장하는 동료에게 따뜻한 응원 한마디를 남겨주세요."
+            @keydown.enter.prevent="submitComment($event)"
+          />
+          <button
+            class="send-btn"
+            :disabled="!newCommentContent.trim() || isSubmitting"
+            @click="submitComment"
+            aria-label="댓글 등록"
+          >
+            <Send :size="18" />
+          </button>
         </div>
 
         <div class="comment-list">
-          <div v-for="comment in post.comments" :key="comment.id" class="comment-item">
+          <div v-for="comment in sortedComments" :key="comment.id" class="comment-item">
             <div class="comment-avatar">
               <div class="avatar sm">{{ comment.user_nickname?.charAt(0) }}</div>
             </div>
@@ -89,7 +87,7 @@
             </div>
           </div>
 
-          <div v-if="!post.comments?.length" class="no-comments">
+          <div v-if="!sortedComments.length" class="no-comments">
             아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!
           </div>
         </div>
@@ -99,56 +97,66 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useUserStore } from '@/stores/user'
+
 import { ChevronLeft, ChevronRight, Book, Eye, MessageCircle, Send } from 'lucide-vue-next'
+
 import { formatTimeAgo } from '@/utils/date'
 import api from '@/api'
 import aladinApi from '@/api/aladin'
-import { computed } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
+
+const postId = route.params.id
+const { id: currentUserId } = storeToRefs(userStore)
 
 const post = ref(null)
 const isLoading = ref(true)
-const newCommentContent = ref('')
 const isSubmitting = ref(false)
+const newCommentContent = ref('')
 const bookTitle = ref('')
 
-// TODO: 글 작성자 여부 판단 로직 추가 필요
+// 1. 게시글 작성자 본인 여부 확인
 const isMine = computed(() => {
-  // return currentUser.value?.id === post.value?.user_id
-  return true
+  if (!post.value || !currentUserId.value) return false
+
+  return String(currentUserId.value) === String(post.value.user_id)
 })
 
-const goToEdit = () => {
-  router.push({
-    name: 'community-edit',
-    params: { id: post.value.id },
-    query: {
-      book_title: bookTitle.value || '책 정보',
-      book_isbn: post.value.book_isbn,
-    },
+// 2. 댓글 최신순 정렬
+const sortedComments = computed(() => {
+  if (!post.value?.comments) return []
+
+  return [...post.value.comments].sort((a, b) => {
+    return new Date(b.created_at) - new Date(a.created_at)
   })
-}
+})
 
-const handleDelete = async () => {
-  if (confirm('게시글을 삭제하시겠습니까?')) {
-    try {
-      await api.delete(`/community/posts/${post.value.id}/`)
+// 1. 게시글 상세 정보 조회
+const fetchPost = async () => {
+  try {
+    isLoading.value = true
+    const response = await api.get(`/community/posts/${postId}/`)
+    post.value = response.data
 
-      alert('삭제되었습니다.')
-      router.push({ name: 'community' })
-    } catch (error) {
-      console.error('삭제 실패:', error)
-      alert('삭제 중 오류가 발생했습니다.')
+    // 게시글에 연결된 책이 있다면 책 정보 추가 조회
+    if (post.value.book_isbn) {
+      await fetchBookTitle(post.value.book_isbn)
     }
+  } catch (error) {
+    console.error('게시글 불러오기 실패:', error)
+    router.back()
+  } finally {
+    isLoading.value = false
   }
 }
 
-const postId = route.params.id
-
+// 2. 알라딘 API - 책 제목 조회
 const fetchBookTitle = async (isbn) => {
   if (!isbn) return
 
@@ -175,28 +183,13 @@ const fetchBookTitle = async (isbn) => {
   }
 }
 
-const fetchPost = async () => {
-  try {
-    isLoading.value = true
-    const response = await api.get(`/community/posts/${postId}/`)
-    post.value = response.data
-
-    if (post.value.book_isbn) {
-      fetchBookTitle(post.value.book_isbn)
-    }
-  } catch (error) {
-    console.error('Error fetching post:', error)
-    alert('게시글을 불러오지 못했습니다.')
-    router.back()
-  } finally {
-    isLoading.value = false
-  }
-}
-
+// 3. 댓글 작성
 const submitComment = async (event) => {
+  // 한글 입력 중 엔터 중복 방지
   if (event && event.isComposing) return
 
   const content = newCommentContent.value.trim()
+  // 내용이 없거나 이미 전송 중이면 중단
   if (!content || isSubmitting.value) return
 
   try {
@@ -206,28 +199,56 @@ const submitComment = async (event) => {
       content: content,
     })
 
+    // 백엔드에서 생성된 댓글 데이터를 로컬 상태에 추가
     const newComment = response.data
-
     if (!post.value.comments) {
       post.value.comments = []
     }
-
     post.value.comments.push(newComment)
 
     newCommentContent.value = ''
   } catch (error) {
-    console.error('Comment submit error:', error)
-    alert('댓글 작성 실패')
+    console.error('댓글 작성 실패:', error)
   } finally {
     isSubmitting.value = false
   }
 }
 
-const goBack = () => router.back()
-const goToBookDetail = (isbn) => router.push({ name: 'book-detail', params: { isbn13: isbn } })
+// 4. 게시글 삭제
+const handleDelete = async () => {
+  if (!confirm('게시글을 삭제하시겠습니까?')) return
 
-onMounted(() => {
-  fetchPost()
+  try {
+    await api.delete(`/community/posts/${post.value.id}/`)
+    alert('삭제되었습니다.')
+    router.push({ name: 'community' })
+  } catch (error) {
+    console.error('삭제 실패:', error)
+  }
+}
+
+const goBack = () => router.back()
+
+const goToEdit = () => {
+  router.push({
+    name: 'community-edit',
+    params: { id: post.value.id },
+    query: {
+      book_title: bookTitle.value || '책 정보',
+      book_isbn: post.value.book_isbn,
+    },
+  })
+}
+
+const goToBookDetail = (isbn) => {
+  router.push({ name: 'book-detail', params: { isbn13: isbn } })
+}
+
+onMounted(async () => {
+  if (!userStore.userInfo) {
+    await userStore.fetchUserProfile()
+  }
+  await fetchPost()
 })
 </script>
 
@@ -273,13 +294,11 @@ onMounted(() => {
   align-items: flex-start;
   margin-bottom: 20px;
 }
-
 .user-profile {
   display: flex;
   align-items: center;
   gap: 12px;
 }
-
 .avatar {
   width: 44px;
   height: 44px;
@@ -297,18 +316,15 @@ onMounted(() => {
   height: 32px;
   font-size: 12px;
 }
-
 .user-info {
   display: flex;
   flex-direction: column;
 }
-
 .username {
   font-weight: 700;
   font-size: 16px;
   color: #111;
 }
-
 .time {
   font-size: 13px;
   color: #aaa;
@@ -368,7 +384,6 @@ onMounted(() => {
   margin: 0 0 20px 0;
   line-height: 1.3;
 }
-
 .post-content {
   font-size: 16px;
   line-height: 1.7;
@@ -382,9 +397,7 @@ onMounted(() => {
   border-top: 1px solid #f5f5f5;
   padding-top: 20px;
 }
-
-.stat-item,
-.action-btn {
+.stat-item {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -392,17 +405,9 @@ onMounted(() => {
   color: #888;
 }
 
-.action-btn {
-  background: none;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-}
-
 .comments-section {
   margin-top: 40px;
 }
-
 .section-title {
   display: flex;
   align-items: center;
@@ -416,17 +421,12 @@ onMounted(() => {
   color: #4f46e5;
 }
 
-.comment-form {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 32px;
-  align-items: flex-start;
-}
 .input-wrapper {
   flex: 1;
   position: relative;
   display: flex;
   align-items: center;
+  margin-bottom: 32px;
 }
 .input-wrapper input {
   width: 100%;
@@ -474,26 +474,24 @@ onMounted(() => {
   flex-direction: column;
   gap: 24px;
 }
-
 .comment-item {
   display: flex;
   gap: 12px;
 }
-
 .comment-body {
   flex: 1;
   background-color: #fff;
   border-radius: 24px;
   padding: 12px;
+  border: 1px solid #eee;
+  box-shadow: 2px 2px rgba(0, 0, 0, 0.03);
 }
-
 .comment-meta {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
 }
-
 .comment-text {
   font-size: 15px;
   line-height: 1.5;
