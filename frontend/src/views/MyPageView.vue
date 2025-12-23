@@ -87,7 +87,7 @@
               <div class="file-input-box">
                 <div class="file-info">
                   <FileText :size="16" />
-                  <span>파일명.pdf</span>
+                  <span>{{ resumeFileName }}</span>
                 </div>
                 <button class="btn-sm">변경</button>
               </div>
@@ -194,6 +194,7 @@ const router = useRouter()
 const activeTab = ref('settings')
 const activityFilter = ref('posts')
 const isChangingPassword = ref(false)
+const resumeFileName = ref('')
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
@@ -275,6 +276,20 @@ const handleDeleteAccount = async () => {
   }
 }
 
+const fetchUserResumes = async () => {
+  try {
+    const response = await api.get('/resumes/')
+
+    if (response.data && response.data.length > 0) {
+      resumeFileName.value = response.data[0].file_name || '이력서 파일이 업로드되지 않았습니다.'
+    } else {
+      resumeFileName.value = '이력서 파일이 업로드되지 않았습니다.'
+    }
+  } catch (error) {
+    console.log('이력서 조회 중 오류 발생:', error)
+    resumeFileName.value = '정보를 불러오지 못했습니다.'
+  }
+}
 const tabs = [
   { id: 'report', label: '분석 리포트' },
   { id: 'activities', label: '내 활동' },
@@ -310,6 +325,7 @@ onMounted(() => {
   if (!userStore.userInfo) {
     userStore.fetchUserProfile()
   }
+  fetchUserResumes()
 })
 </script>
 
