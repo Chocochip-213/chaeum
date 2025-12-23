@@ -1,0 +1,20 @@
+services:
+  inference-worker:
+    build:
+      context: ./inference
+      dockerfile: Dockerfile
+    # GPU 워커 실행: 큐 이름 'inference', 단일 프로세스
+    command: celery -A tasks worker --loglevel=info -Q inference --concurrency=1 --pool=solos
+    volumes:
+      - ./inference:/app
+      - ./inference_cache:/root/.cache/huggingface
+    environment:
+      # [KEY] 외부에서 주입받을 Broker URL
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
