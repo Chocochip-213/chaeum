@@ -10,13 +10,13 @@ services:
 #    ports:
 #      - "5432:5432"
 
-  # [2] Redis
+  # Redis
   redis:
     image: redis:7.2-alpine
     ports:
       - "6379:6379"
 
-  # [3] Backend (Django)
+  # Backend (Django)
   backend:
     build: ./backend
     # 프로젝트 생성 전에는 이 커맨드가 실패하겠지만, 생성을 위해 build는 필요함
