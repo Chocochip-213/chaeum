@@ -196,32 +196,31 @@ const fetchBooks = async () => {
 // --- 2. 네비게이션 및 스크롤 저장 로직 ---
 
 /**
- * 책 카드를 클릭했을 때 실행됩니다.
- * 이동하기 직전에 현재 스크롤 위치를 Store에 저장합니다.
+ * 책 카드를 클릭했을 때 실행
+ * 이동하기 직전에 현재 스크롤 위치를 Store에 저장
  */
+
+const emit = defineEmits(['select-book'])
+
 const handleBookClick = (book) => {
-  // !! 현재 스크롤 위치 저장 !!
   store.scrollY = window.scrollY
 
   if (props.mode === 'select') {
-    // 글 작성 모드 -> 글쓰기 페이지로 이동
-    router.push({
-      name: 'community-write',
-      query: {
-        isbn: book.isbn13,
-        title: book.title,
-        cover: book.cover,
-      },
+    emit('select-book', {
+      isbn: book.isbn13,
+      title: book.title,
+      cover: book.cover,
+      author: book.author,
+      category: book.categoryName,
     })
   } else {
-    // 일반 검색 모드 -> 도서 상세 페이지로 이동
+    // 일반 검색 모드일 때는 상세 페이지로 이동 (기존 유지)
     router.push({
       name: 'book-detail',
       params: { isbn13: book.isbn13 },
     })
   }
 }
-
 // 스크롤 이벤트 핸들러 (버튼 표시 여부 결정)
 const handleScroll = () => {
   showScrollBtn.value = window.scrollY > 300
@@ -235,7 +234,7 @@ const scrollToTop = () => {
 // --- 3. 라이프사이클 훅 (스크롤 복구 및 초기화) ---
 
 onMounted(() => {
-  // 브라우저의 기본 스크롤 복원 기능 끄기 (수동 제어 위해)
+  // 브라우저의 기본 스크롤 복원 기능 끄기
   if ('scrollRestoration' in history) {
     history.scrollRestoration = 'manual'
   }
@@ -284,8 +283,8 @@ onUnmounted(() => {
 // --- 4. 라우터 가드 (검색 기록 초기화 로직) ---
 
 /**
- * 컴포넌트를 떠나기(이동하기) 직전에 실행됩니다.
- * '도서 관련 페이지(/books...)'가 아닌 다른 곳으로 갈 때만 검색어를 초기화합니다.
+ * 컴포넌트를 떠나기 직전에 실행
+ * '도서 관련 페이지(/books)'가 아닌 다른 곳으로 갈 때만 검색어를 초기화
  */
 onBeforeRouteLeave((to, from, next) => {
   // 이동하려는 경로에 '/books'가 포함되지 않았을 경우

@@ -81,6 +81,12 @@ const router = createRouter({
       props: true,
     },
     {
+      path: '/community/edit:id',
+      name: 'community-edit',
+      component: () => import('@/views/CommunityEditView.vue'),
+      props: true,
+    },
+    {
       path: '/profile',
       name: 'profile',
       component: () => import('@/views/MyPageView.vue'),
