@@ -1,4 +1,5 @@
 from rest_framework import views, status, parsers
+from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from apps.jobs.models import JobPosting
@@ -137,3 +138,15 @@ class AnalysisView(views.APIView):
                                 status=status.HTTP_404_NOT_FOUND)
 
         return Response({"error": "job_posting_url is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+class AnalysisHistoryView(generics.ListAPIView):
+    """
+    내 분석 결과 히스토리 조회 (최신순)
+    URL: GET /api/analysis/history/
+    """
+    serializer_class = AnalysisResultSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # 내가 요청한 분석 결과만, 최신순 정렬
+        return AnalysisResult.objects.filter(user=self.request.user).order_by('-created_at')

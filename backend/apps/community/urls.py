@@ -7,4 +7,5 @@ router.register(r'posts', views.PostViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('comments/my/', views.MyCommentListView.as_view(), name='my-comments'),
 ]
