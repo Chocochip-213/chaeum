@@ -32,7 +32,14 @@ SECRET_KEY = 'django-insecure-bonq#=77^%ye$c0vy1$5okvh7gt4pqat9#hoid#%@&&it52fdp
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '15.164.52.217',
+    '127.0.0.1',
+    'localhost',
+    'chaeum.store',
+    'www.chaeum.store',
+    '.chaeum.store'
+]
 
 
 # Application definition
