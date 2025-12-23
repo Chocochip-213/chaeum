@@ -26,7 +26,7 @@
     <main class="tab-content">
       <section v-if="activeTab === 'report'">
         <h2 class="section-title"><BarChart2 :size="20" /> 최근 분석 내역</h2>
-
+        <div v-if="reports.length === 0" class="empty-state">최근 분석 내역이 없습니다.</div>
         <div class="report-list">
           <div v-for="report in reports" :key="report.id" class="report-card">
             <div class="report-info">
