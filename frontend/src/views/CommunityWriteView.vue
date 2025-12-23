@@ -98,11 +98,9 @@ const handleSubmit = async () => {
       content: content.value,
     })
 
-    alert('게시글이 등록되었습니다!')
     router.push({ name: 'community' })
   } catch (error) {
     console.error('글 등록 실패:', error)
-    alert('등록 중 오류가 발생했습니다.')
   }
 }
 

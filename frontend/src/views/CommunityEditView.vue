@@ -52,30 +52,54 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ChevronLeft, Check } from 'lucide-vue-next'
 import api from '@/api'
+import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
+const { id: currentUserId } = storeToRefs(userStore)
 
 const postId = route.params.id
 const postTitle = ref('')
 const content = ref('')
 
+const post = ref(null)
+const isLoading = ref(true)
+
 const fetchPostDetail = async () => {
   try {
     const response = await api.get(`/community/posts/${postId}/`)
-    const data = response.data
+    post.value = response.data
 
-    postTitle.value = data.title
-    content.value = data.content
+    postTitle.value = post.value.title
+    content.value = post.value.content
+
+    checkPermission()
   } catch (error) {
     console.error('게시글 불러오기 실패:', error)
-    alert('게시글 정보를 불러올 수 없습니다.')
     router.back()
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const checkPermission = () => {
+  if (!post.value || !currentUserId.value) return
+
+  const authorId = post.value.user_id
+
+  if (String(currentUserId.value) !== String(authorId)) {
+    alert('수정 권한이 없는 게시글입니다.')
+    router.replace({ name: 'community-detail', params: { id: postId } })
   }
 }
 
 const handleUpdate = async () => {
-  if (!content.value.trim() || !postTitle.value.trim()) return
+  if (!postTitle.value.trim() || !content.value.trim()) {
+    alert('제목과 내용을 모두 입력해주세요.')
+    return
+  }
 
   try {
     await api.put(`/community/posts/${postId}/`, {
@@ -83,18 +107,21 @@ const handleUpdate = async () => {
       content: content.value,
     })
 
-    alert('게시글이 수정되었습니다!')
-    // 수정 페이지 히스토리를 상세 페이지로 덮어씌우기
     router.replace({ name: 'community-detail', params: { id: postId } })
   } catch (error) {
     console.error('글 수정 실패:', error)
-    alert('수정 중 오류가 발생했습니다.')
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  isLoading.value = true
+
+  if (!userStore.userInfo) {
+    await userStore.fetchUserProfile()
+  }
+
   if (postId) {
-    fetchPostDetail()
+    await fetchPostDetail()
   }
 })
 </script>
