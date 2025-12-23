@@ -16,7 +16,6 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
       - redis
     # 환경변수는 나중에 생성할 .env 파일 참조
     env_file:
