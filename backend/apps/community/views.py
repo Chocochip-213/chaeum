@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.db.models import F
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Post, Comment
-from .serializers import PostSerializer, CommentSerializer
+from .serializers import PostSerializer, CommentSerializer, MyCommentSerializer
 from .permissions import IsOwnerOrReadOnly
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -51,7 +51,7 @@ class MyCommentListView(generics.ListAPIView):
     내 댓글 목록 조회 (최신순, 페이지네이션 없음)
     URL: GET /api/community/comments/my/
     """
-    serializer_class = CommentSerializer
+    serializer_class = MyCommentSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
 
