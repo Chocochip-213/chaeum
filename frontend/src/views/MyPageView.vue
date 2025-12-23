@@ -26,7 +26,7 @@
     <main class="tab-content">
       <section v-if="activeTab === 'report'">
         <h2 class="section-title"><BarChart2 :size="20" /> 최근 분석 내역</h2>
-
+        <div v-if="reports.length === 0" class="empty-state">최근 분석 내역이 없습니다.</div>
         <div class="report-list">
           <div v-for="report in reports" :key="report.id" class="report-card">
             <div class="report-info">
@@ -134,6 +134,9 @@
                   </div>
                   <div class="file-info-text">
                     <span class="file-name">{{ resumeFileName }}</span>
+                    <span class="last-update"
+                      >마지막 업데이트: {{ formatDate(resumeFileDate) }}</span
+                    >
                     <span class="file-action-text">클릭하거나 파일을 드래그하여 변경</span>
                   </div>
                 </div>
@@ -261,6 +264,7 @@ const { nickname, email } = storeToRefs(userStore)
 const activeTab = ref(route.query.tab || 'settings')
 const activityFilter = ref('posts')
 const isChangingPassword = ref(false)
+const resumeFileDate = ref('')
 const resumeFileName = ref('')
 const myComments = ref([])
 const myPosts = ref([])
@@ -415,6 +419,7 @@ const fetchUserResumes = async () => {
     const response = await api.get('/resumes/')
     if (response.data && response.data.length > 0) {
       resumeFileName.value = response.data[0].file_name
+      resumeFileDate.value = response.data[0].uploaded_at
     } else {
       resumeFileName.value = ''
     }
@@ -798,23 +803,44 @@ onMounted(() => {
 .file-info-text {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   flex-grow: 1;
   overflow: hidden;
+  gap: 2px;
 }
 
 .file-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111;
-  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.last-update {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
 .file-action-text {
   font-size: 12px;
-  color: #6b7280;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.file-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  background-color: #f3f4f6;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  flex-shrink: 0;
 }
 
 .input-readonly {
