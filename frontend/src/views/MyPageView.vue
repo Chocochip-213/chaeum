@@ -1,5 +1,6 @@
 <template>
   <div class="my-page-container">
+    <!-- Header -->
     <header class="profile-header">
       <div class="profile-avatar-lg">
         {{ userInfo.nickname.charAt(0) }}
@@ -10,6 +11,7 @@
       </div>
     </header>
 
+    <!-- Tab Navigation -->
     <nav class="tab-nav">
       <button
         v-for="tab in tabs"
@@ -22,7 +24,9 @@
       </button>
     </nav>
 
+    <!-- Tab Content -->
     <main class="tab-content">
+      <!-- 1. Report Tab -->
       <section v-if="activeTab === 'report'">
         <h2 class="section-title"><BarChart2 :size="20" /> 최근 분석 내역</h2>
 
@@ -45,6 +49,7 @@
         </div>
       </section>
 
+      <!-- 2. Activities Tab -->
       <section v-if="activeTab === 'activities'">
         <div class="activity-filters">
           <button
@@ -77,8 +82,10 @@
         </div>
       </section>
 
+      <!-- 3. Settings Tab (Modified) -->
       <section v-if="activeTab === 'settings'">
         <div class="settings-grid">
+          <!-- Left: Profile Info -->
           <div class="settings-card">
             <h3 class="card-title"><User :size="18" /> 프로필 정보</h3>
 
@@ -103,27 +110,77 @@
             </div>
           </div>
 
-          <div class="settings-card">
-            <h3 class="card-title"><Settings :size="18" /> 계정 관리</h3>
+          <!-- Right: Account Management (Modified for Password Change) -->
+          <div class="settings-card column-card">
+            <div>
+              <h3 class="card-title"><Settings :size="18" /> 계정 관리</h3>
 
-            <div class="form-group">
-              <label>이메일</label>
-              <input type="text" :value="userInfo.email" readonly class="input-readonly" />
+              <div class="form-group">
+                <label>이메일</label>
+                <input type="text" :value="userInfo.email" readonly class="input-readonly" />
+              </div>
+
+              <div class="form-group">
+                <label>비밀번호</label>
+                <!-- Default State: Show Link -->
+                <button
+                  v-if="!isChangingPassword"
+                  @click="isChangingPassword = true"
+                  class="link-btn"
+                >
+                  비밀번호 변경하기
+                </button>
+
+                <!-- Active State: Show Form -->
+                <div v-else class="password-form-container">
+                  <input
+                    type="password"
+                    v-model="passwordForm.current"
+                    placeholder="현재 비밀번호"
+                    class="input-field"
+                  />
+                  <input
+                    type="password"
+                    v-model="passwordForm.new"
+                    placeholder="새 비밀번호"
+                    class="input-field"
+                  />
+                  <input
+                    type="password"
+                    v-model="passwordForm.confirm"
+                    placeholder="새 비밀번호 확인"
+                    class="input-field"
+                  />
+                  <div class="form-actions">
+                    <button @click="cancelPasswordChange" class="btn-cancel">취소</button>
+                    <button class="btn-save">변경 완료</button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label>비밀번호</label>
-              <button class="link-btn">비밀번호 변경하기</button>
+            <!-- Logout Section -->
+            <div class="logout-section">
+              <div class="divider"></div>
+              <button class="btn-logout"><LogOut :size="16" /> 로그아웃</button>
             </div>
           </div>
         </div>
 
+        <!-- Danger Zone -->
         <div class="danger-zone">
-          <h3 class="danger-title">Danger Zone</h3>
-          <div class="danger-actions">
-            <button class="btn-danger-outline"><LogOut :size="16" /> 로그아웃</button>
-            <button class="btn-danger-fill"><Trash2 :size="16" /> 회원 탈퇴</button>
+          <div class="danger-header">
+            <div class="danger-icon-wrapper">
+              <AlertTriangle :size="20" />
+            </div>
+            <div>
+              <h3 class="danger-title">회원 탈퇴</h3>
+              <p class="danger-desc">
+                탈퇴 시 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.
+              </p>
+            </div>
           </div>
+          <button class="btn-danger-fill">탈퇴하기</button>
         </div>
       </section>
     </main>
@@ -140,12 +197,24 @@ import {
   FileText,
   Settings,
   LogOut,
-  Trash2,
+  AlertTriangle,
   Eye,
 } from 'lucide-vue-next'
 
-const activeTab = ref('report') // report, activities, settings
-const activityFilter = ref('posts') // posts, comments
+const activeTab = ref('settings') // Default to settings for preview
+const activityFilter = ref('posts')
+const isChangingPassword = ref(false) // Toggle state for password form
+
+const passwordForm = ref({
+  current: '',
+  new: '',
+  confirm: '',
+})
+
+const cancelPasswordChange = () => {
+  isChangingPassword.value = false
+  passwordForm.value = { current: '', new: '', confirm: '' } // Reset form
+}
 
 const tabs = [
   { id: 'report', label: '분석 리포트' },
@@ -194,6 +263,7 @@ const myPosts = ref([
 </script>
 
 <style scoped>
+/* Base Styles */
 .my-page-container {
   max-width: 1024px;
   margin: 0 auto;
@@ -203,6 +273,7 @@ const myPosts = ref([
   color: #111;
 }
 
+/* Header */
 .profile-header {
   display: flex;
   align-items: center;
@@ -232,6 +303,7 @@ const myPosts = ref([
   margin: 0;
 }
 
+/* Tabs */
 .tab-nav {
   display: flex;
   gap: 32px;
@@ -261,6 +333,7 @@ const myPosts = ref([
   background-color: #111;
 }
 
+/* Common Section */
 .section-title {
   display: flex;
   align-items: center;
@@ -270,6 +343,7 @@ const myPosts = ref([
   margin-bottom: 20px;
 }
 
+/* Report Tab */
 .report-list {
   display: flex;
   flex-direction: column;
@@ -326,6 +400,7 @@ const myPosts = ref([
   color: #111;
 }
 
+/* Activity Tab */
 .activity-filters {
   display: flex;
   gap: 12px;
@@ -380,6 +455,7 @@ const myPosts = ref([
   gap: 4px;
 }
 
+/* Settings Grid */
 .settings-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -390,7 +466,15 @@ const myPosts = ref([
   border: 1px solid #eee;
   border-radius: 12px;
   padding: 24px;
+  background-color: white;
 }
+/* Flex column layout to push logout to bottom */
+.column-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 .card-title {
   display: flex;
   align-items: center;
@@ -468,53 +552,152 @@ const myPosts = ref([
   color: #111;
 }
 
+/* Password Form Styles */
+.password-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+.input-field {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #eee;
+  background-color: white;
+  border-radius: 6px;
+  color: #111;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.input-field:focus {
+  border-color: #111;
+}
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.btn-cancel {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #666;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-save {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #111;
+  background-color: #111;
+  color: white;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Logout Section Styles */
+.logout-section {
+  margin-top: 32px;
+}
+.divider {
+  height: 1px;
+  background-color: #eee;
+  margin-bottom: 16px;
+}
+.btn-logout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: white;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.btn-logout:hover {
+  background-color: #f3f4f6;
+  color: #111;
+}
+
+/* New Danger Zone Styles */
 .danger-zone {
-  background-color: #fef2f2;
+  background-color: #fff5f5;
+  border: 1px solid #fee2e2;
   border-radius: 12px;
   padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.danger-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.danger-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .danger-title {
   color: #b91c1c;
   font-size: 16px;
   font-weight: 700;
-  margin: 0 0 16px 0;
+  margin: 0 0 4px 0;
 }
-.danger-actions {
-  display: flex;
-  gap: 12px;
-}
-.btn-danger-outline {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: white;
-  border: 1px solid #fee2e2;
-  color: #ef4444;
-  padding: 12px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
+.danger-desc {
+  font-size: 14px;
+  color: #7f1d1d;
+  margin: 0;
 }
 .btn-danger-fill {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
   background-color: #dc2626;
   border: 1px solid #dc2626;
   color: white;
-  padding: 12px;
+  padding: 10px 20px;
   border-radius: 8px;
   font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+}
+.btn-danger-fill:hover {
+  background-color: #b91c1c;
 }
 
 @media (max-width: 768px) {
   .settings-grid {
     grid-template-columns: 1fr;
+  }
+  .danger-zone {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .btn-danger-fill {
+    width: 100%;
   }
 }
 </style>
