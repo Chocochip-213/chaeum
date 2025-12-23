@@ -1,17 +1,15 @@
 <template>
   <div class="my-page-container">
-    <!-- Header -->
     <header class="profile-header">
       <div class="profile-avatar-lg">
-        {{ userInfo.nickname.charAt(0) }}
+        {{ nickname.charAt(0) }}
       </div>
       <div class="profile-info">
-        <h1 class="profile-name">{{ userInfo.nickname }}</h1>
-        <p class="profile-email">{{ userInfo.email }}</p>
+        <h1 class="profile-name">{{ nickname }}</h1>
+        <p class="profile-email">{{ email }}</p>
       </div>
     </header>
 
-    <!-- Tab Navigation -->
     <nav class="tab-nav">
       <button
         v-for="tab in tabs"
@@ -24,9 +22,7 @@
       </button>
     </nav>
 
-    <!-- Tab Content -->
     <main class="tab-content">
-      <!-- 1. Report Tab -->
       <section v-if="activeTab === 'report'">
         <h2 class="section-title"><BarChart2 :size="20" /> 최근 분석 내역</h2>
 
@@ -49,7 +45,6 @@
         </div>
       </section>
 
-      <!-- 2. Activities Tab -->
       <section v-if="activeTab === 'activities'">
         <div class="activity-filters">
           <button
@@ -82,10 +77,8 @@
         </div>
       </section>
 
-      <!-- 3. Settings Tab (Modified) -->
       <section v-if="activeTab === 'settings'">
         <div class="settings-grid">
-          <!-- Left: Profile Info -->
           <div class="settings-card">
             <h3 class="card-title"><User :size="18" /> 프로필 정보</h3>
 
@@ -94,35 +87,24 @@
               <div class="file-input-box">
                 <div class="file-info">
                   <FileText :size="16" />
-                  <span>{{ userInfo.resumeFile }}</span>
+                  <span>파일명.pdf</span>
                 </div>
                 <button class="btn-sm">변경</button>
               </div>
             </div>
-
-            <div class="form-group">
-              <label>보유 스킬</label>
-              <div class="skill-tags">
-                <span v-for="skill in userInfo.skills" :key="skill" class="skill-tag">
-                  {{ skill }}
-                </span>
-              </div>
-            </div>
           </div>
 
-          <!-- Right: Account Management (Modified for Password Change) -->
           <div class="settings-card column-card">
             <div>
               <h3 class="card-title"><Settings :size="18" /> 계정 관리</h3>
 
               <div class="form-group">
                 <label>이메일</label>
-                <input type="text" :value="userInfo.email" readonly class="input-readonly" />
+                <input type="text" :value="email" readonly class="input-readonly" />
               </div>
 
               <div class="form-group">
                 <label>비밀번호</label>
-                <!-- Default State: Show Link -->
                 <button
                   v-if="!isChangingPassword"
                   @click="isChangingPassword = true"
@@ -131,7 +113,6 @@
                   비밀번호 변경하기
                 </button>
 
-                <!-- Active State: Show Form -->
                 <div v-else class="password-form-container">
                   <input
                     type="password"
@@ -159,7 +140,6 @@
               </div>
             </div>
 
-            <!-- Logout Section -->
             <div class="logout-section">
               <div class="divider"></div>
               <button class="btn-logout"><LogOut :size="16" /> 로그아웃</button>
@@ -167,7 +147,6 @@
           </div>
         </div>
 
-        <!-- Danger Zone -->
         <div class="danger-zone">
           <div class="danger-header">
             <div class="danger-icon-wrapper">
@@ -188,7 +167,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import {
   BarChart2,
   ChevronRight,
@@ -200,10 +179,15 @@ import {
   AlertTriangle,
   Eye,
 } from 'lucide-vue-next'
+import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 
-const activeTab = ref('settings') // Default to settings for preview
+const activeTab = ref('settings')
 const activityFilter = ref('posts')
-const isChangingPassword = ref(false) // Toggle state for password form
+const isChangingPassword = ref(false)
+
+const userStore = useUserStore()
+const { nickname, email } = storeToRefs(userStore)
 
 const passwordForm = ref({
   current: '',
@@ -213,7 +197,7 @@ const passwordForm = ref({
 
 const cancelPasswordChange = () => {
   isChangingPassword.value = false
-  passwordForm.value = { current: '', new: '', confirm: '' } // Reset form
+  passwordForm.value = { current: '', new: '', confirm: '' }
 }
 
 const tabs = [
@@ -221,13 +205,6 @@ const tabs = [
   { id: 'activities', label: '내 활동' },
   { id: 'settings', label: '계정 설정' },
 ]
-
-const userInfo = ref({
-  nickname: '김싸피',
-  email: 'ssafy@example.com',
-  resumeFile: 'kim_resume_v2.pdf',
-  skills: ['Java', 'Spring', 'MySQL'],
-})
 
 const reports = ref([
   {
@@ -260,20 +237,22 @@ const myPosts = ref([
   { id: 1, title: '클린코드 3장 함수 요약 정리', date: '2024.05.21', likes: 5, comments: 2 },
   { id: 2, title: '면접 스터디 모집합니다 (서울캠)', date: '2024.05.18', likes: 8, comments: 12 },
 ])
+
+onMounted(() => {
+  if (!userStore.userInfo) {
+    userStore.fetchUserProfile()
+  }
+})
 </script>
 
 <style scoped>
-/* Base Styles */
 .my-page-container {
   max-width: 1024px;
   margin: 0 auto;
   padding: 60px 20px 100px;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: #111;
 }
 
-/* Header */
 .profile-header {
   display: flex;
   align-items: center;
@@ -303,7 +282,6 @@ const myPosts = ref([
   margin: 0;
 }
 
-/* Tabs */
 .tab-nav {
   display: flex;
   gap: 32px;
@@ -333,7 +311,6 @@ const myPosts = ref([
   background-color: #111;
 }
 
-/* Common Section */
 .section-title {
   display: flex;
   align-items: center;
@@ -343,7 +320,6 @@ const myPosts = ref([
   margin-bottom: 20px;
 }
 
-/* Report Tab */
 .report-list {
   display: flex;
   flex-direction: column;
@@ -400,7 +376,6 @@ const myPosts = ref([
   color: #111;
 }
 
-/* Activity Tab */
 .activity-filters {
   display: flex;
   gap: 12px;
@@ -455,7 +430,6 @@ const myPosts = ref([
   gap: 4px;
 }
 
-/* Settings Grid */
 .settings-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -468,7 +442,6 @@ const myPosts = ref([
   padding: 24px;
   background-color: white;
 }
-/* Flex column layout to push logout to bottom */
 .column-card {
   display: flex;
   flex-direction: column;
@@ -520,18 +493,6 @@ const myPosts = ref([
   cursor: pointer;
   color: #111;
 }
-.skill-tags {
-  display: flex;
-  gap: 8px;
-}
-.skill-tag {
-  background-color: #f3f4f6;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #333;
-}
 .input-readonly {
   width: 100%;
   padding: 12px;
@@ -552,7 +513,6 @@ const myPosts = ref([
   color: #111;
 }
 
-/* Password Form Styles */
 .password-form-container {
   display: flex;
   flex-direction: column;
@@ -605,7 +565,6 @@ const myPosts = ref([
   cursor: pointer;
 }
 
-/* Logout Section Styles */
 .logout-section {
   margin-top: 32px;
 }
@@ -635,7 +594,6 @@ const myPosts = ref([
   color: #111;
 }
 
-/* New Danger Zone Styles */
 .danger-zone {
   background-color: #fff5f5;
   border: 1px solid #fee2e2;
