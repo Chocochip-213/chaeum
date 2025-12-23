@@ -60,7 +60,7 @@
           <input
             type="text"
             v-model="newCommentContent"
-            placeholder="따뜻한 댓글을 남겨주세요..."
+            placeholder="성장하는 동료에게 따뜻한 응원 한마디를 남겨주세요."
             @keydown.enter.prevent="submitComment($event)"
           />
           <button

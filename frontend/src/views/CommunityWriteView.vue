@@ -47,7 +47,7 @@
           <div class="textarea-wrapper">
             <textarea
               v-model="content"
-              placeholder="이 책을 읽고 어떤 생각을 하셨나요? 자유롭게 이야기를 나눠보세요."
+              placeholder="이 책을 통해 어떤 인사이트를 얻으셨나요? 자유롭게 이야기를 나눠보세요."
               class="content-textarea"
             ></textarea>
           </div>
