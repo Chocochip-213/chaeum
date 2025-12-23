@@ -9,7 +9,6 @@ services:
   # [3] Backend (Django)
   backend:
     build: ./backend
-    # 프로젝트 생성 전에는 이 커맨드가 실패하겠지만, 생성을 위해 build는 필요함
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
@@ -17,7 +16,6 @@ services:
       - "8000:8000"
     depends_on:
       - redis
-    # 환경변수는 나중에 생성할 .env 파일 참조
     env_file:
       - ./backend/.env
 
