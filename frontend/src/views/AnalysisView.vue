@@ -9,7 +9,7 @@
       </div>
     </header>
 
-    <main class="analysis-content">
+    <main v-if="!isAnalyzing && !showResult" class="analysis-content">
       <section class="analysis-section">
         <h2 class="section-label">1. 내 이력서 등록</h2>
         <input
@@ -72,6 +72,22 @@
         <p class="helper-text">* 이력서가 등록되어 있어야 분석이 가능합니다.</p>
       </section>
     </main>
+
+    <!-- 2. 게임 컴포넌트 (분석 중일 때만 표시) -->
+    <Game v-if="isAnalyzing" @update-score="handleGameScore" />
+
+    <!-- 3. 결과 화면 (분석 완료 후 표시) -->
+    <div v-if="showResult" class="result-container">
+      <div class="result-box">
+        <Sparkles :size="48" class="result-icon" />
+        <h2 class="result-title">분석이 완료되었습니다!</h2>
+        <p class="result-score">
+          기다리는 동안 획득한 사과: <strong>{{ gameScore }}</strong
+          >점
+        </p>
+        <button class="result-btn" @click="goToResult">분석 결과 보러 가기</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -79,6 +95,7 @@
 import { ref, onMounted } from 'vue'
 import { FileText, Upload, Link as LinkIcon, Sparkles } from 'lucide-vue-next'
 import api from '@/api'
+import Game from '@/components/Game.vue'
 
 const fileInputRef = ref(null)
 const isDragging = ref(false)
@@ -87,6 +104,9 @@ const resumeFileDate = ref('')
 
 const jobUrl = ref('')
 const isUrlFocused = ref(false)
+const isAnalyzing = ref(false)
+const showResult = ref(false)
+const gameScore = ref(0)
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
@@ -141,6 +161,10 @@ const fetchUserResumes = async () => {
   }
 }
 
+const handleGameScore = (score) => {
+  gameScore.value = score
+}
+
 const handleAnalyze = async () => {
   if (!resumeFileName.value) {
     alert('먼저 이력서를 등록해주세요.')
@@ -151,9 +175,22 @@ const handleAnalyze = async () => {
     return
   }
 
-  // TODO: 실제 분석 API 호출 로직 작성
+  // 1. 분석 시작: 상태 변경 (입력폼 숨김, 게임 시작)
+  isAnalyzing.value = true
+  showResult.value = false
+  gameScore.value = 0
+
   console.log('분석 시작:', jobUrl.value)
-  alert('로딩 시작')
+
+  // 2. 10초 대기 후 결과 화면 전환
+  setTimeout(() => {
+    isAnalyzing.value = false // 게임 종료
+    showResult.value = true // 결과 화면 표시
+  }, 10000)
+}
+
+const goToResult = () => {
+  alert('분석 결과 페이지로 이동합니다.')
 }
 
 onMounted(() => {
@@ -167,6 +204,7 @@ onMounted(() => {
   margin: 0 auto;
   padding: 60px 20px 100px;
   position: relative;
+  min-height: 600px;
 }
 
 .community-header {
@@ -190,10 +228,9 @@ onMounted(() => {
 .analysis-content {
   display: flex;
   flex-direction: column;
-  gap: 40px; /* 섹션 간 간격 */
+  gap: 40px;
 }
 
-/* 섹션 공통 스타일 */
 .analysis-section {
   display: flex;
   flex-direction: column;
@@ -207,7 +244,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* --- 1. 이력서 업로드 스타일 --- */
 .hidden-input {
   display: none;
 }
@@ -313,7 +349,6 @@ onMounted(() => {
   font-size: 13px;
   color: #4b5563;
 }
-
 .file-action-text {
   font-size: 12px;
   color: #9ca3af;
@@ -394,6 +429,90 @@ onMounted(() => {
   color: #9ca3af;
   margin: 0;
   padding-left: 4px;
+}
+
+.result-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  animation: fadeIn 0.5s ease;
+}
+
+.result-box {
+  text-align: center;
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.result-icon {
+  color: #111;
+  margin-bottom: 8px;
+  animation: bounce 1s infinite;
+}
+
+.result-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111;
+  margin: 0;
+}
+
+.result-score {
+  font-size: 18px;
+  color: #4b5563;
+  margin: 0 0 16px 0;
+}
+
+.result-score strong {
+  color: #ef4444;
+  font-size: 24px;
+}
+
+.result-btn {
+  padding: 14px 32px;
+  background-color: #111;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.result-btn:hover {
+  background-color: #333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @media (max-width: 600px) {
