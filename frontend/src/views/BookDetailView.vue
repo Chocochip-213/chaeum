@@ -12,56 +12,52 @@
       <section class="book-info-section">
         <div class="book-cover">
           <div class="image-wrapper">
-             <div class="carousel-container">
-               <div 
-                 class="carousel-track" 
-                 :style="{ transform: `translateX(-${currentImageIndex * 100}%)` }"
-               >
-                  <!-- 통합 슬라이드 루프 -->
-                  <div 
-                    v-for="(img, index) in allImages" 
-                    :key="index" 
-                    class="carousel-slide"
-                  >
-                     <img :src="img" :alt="book.title" class="real-cover" />
+            <div class="carousel-container">
+              <div
+                class="carousel-track"
+                :style="{ transform: `translateX(-${currentImageIndex * 100}%)` }"
+              >
+                <!-- 통합 슬라이드 루프 -->
+                <div v-for="(img, index) in allImages" :key="index" class="carousel-slide">
+                  <img :src="img" :alt="book.title" class="real-cover" />
+                </div>
+
+                <!-- 이미지가 아예 없는 경우 (allImages empty) -->
+                <div v-if="allImages.length === 0" class="carousel-slide placeholder-slide">
+                  <div class="cover-placeholder">
+                    <span class="cover-title">{{ book.title }}</span>
+                    <span class="cover-deco">No Image</span>
                   </div>
-                  
-                  <!-- 이미지가 아예 없는 경우 (allImages empty) -->
-                  <div v-if="allImages.length === 0" class="carousel-slide placeholder-slide">
-                    <div class="cover-placeholder">
-                      <span class="cover-title">{{ book.title }}</span>
-                      <span class="cover-deco">No Image</span>
-                    </div>
-                  </div>
-               </div>
-             </div>
-            
+                </div>
+              </div>
+            </div>
+
             <!-- Navigation Buttons -->
-            <button 
-              v-if="allImages && allImages.length > 1" 
-              class="nav-btn prev" 
+            <button
+              v-if="allImages && allImages.length > 1"
+              class="nav-btn prev"
               @click.stop="prevImage"
             >
               <ChevronLeft size="32" stroke-width="2.5" />
             </button>
-            <button 
-              v-if="allImages && allImages.length > 1" 
-              class="nav-btn next" 
+            <button
+              v-if="allImages && allImages.length > 1"
+              class="nav-btn next"
               @click.stop="nextImage"
             >
               <ChevronRight size="32" stroke-width="2.5" />
             </button>
- 
-             <!-- Dots Indicator -->
+
+            <!-- Dots Indicator -->
             <div v-if="allImages && allImages.length > 1" class="carousel-dots">
-              <span 
-                v-for="(_, idx) in allImages" 
-                :key="idx" 
-                class="dot" 
+              <span
+                v-for="(_, idx) in allImages"
+                :key="idx"
+                class="dot"
                 :class="{ active: idx === currentImageIndex }"
               ></span>
             </div>
-         </div>
+          </div>
         </div>
 
         <div class="book-details">
@@ -79,7 +75,7 @@
 
               <button class="check-stock-btn" @click="checkStock" :disabled="stockLoading">
                 <span v-if="stockLoading">위치 확인 중...</span>
-                <span v-else>내 주변 서점 재고 확인</span>
+                <span v-else>내 주변 중고매장 재고 확인</span>
               </button>
             </div>
 
@@ -282,7 +278,7 @@ const fetchBookDetail = async () => {
         output: 'js',
         Version: '20131101',
         Cover: 'Big',
-        OptResult: 'previewImgList,packing,ratingInfo', 
+        OptResult: 'previewImgList,packing,ratingInfo',
       },
     })
 
@@ -314,7 +310,7 @@ const fetchBookDetail = async () => {
         link: item.link,
         tags: tags.length > 0 ? tags : ['#개발', '#프로그래밍'],
         isbn13: item.isbn13,
-        previewImgList: previews
+        previewImgList: previews,
       }
     }
   } catch (error) {
@@ -808,8 +804,10 @@ watch(
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0; 
-  transition: opacity 0.3s, background-color 0.2s;
+  opacity: 0;
+  transition:
+    opacity 0.3s,
+    background-color 0.2s;
   z-index: 10;
 }
 .nav-btn:hover {
@@ -858,7 +856,7 @@ watch(
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #eee;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 .preview-img {
   height: 300px; /* 높이 고정 */
