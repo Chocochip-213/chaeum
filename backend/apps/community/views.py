@@ -9,7 +9,7 @@ from .serializers import PostSerializer, CommentSerializer, MyCommentSerializer
 from .permissions import IsOwnerOrReadOnly
 
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all().select_related('user').prefetch_related('comments')
+    queryset = Post.objects.all().select_related('user').prefetch_related('comments', 'comments__user')
     serializer_class = PostSerializer
     # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
