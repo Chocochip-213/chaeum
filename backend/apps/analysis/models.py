@@ -21,6 +21,15 @@ class AnalysisResult(models.Model):
     gap_missing_skills = models.JSONField(default = list, verbose_name = "부족한 기술 목록")
     gap_missing_chapters = models.JSONField(default = list, verbose_name = "추천 학습 챕터 목록")
 
+    # [추가] RAG 추천 결과 저장 (히스토리용)
+    rag_recommendations = models.JSONField(default = list, blank = True, verbose_name = "RAG 추천 도서 목록")
+
+    rag_recommendations = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="RAG 추천 도서 목록"
+    )
+
     created_at = models.DateTimeField(auto_now_add = True)
 
     class Meta:
