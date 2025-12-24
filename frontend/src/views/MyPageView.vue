@@ -28,7 +28,12 @@
         <h2 class="section-title"><BarChart2 :size="20" /> 최근 분석 내역</h2>
         <div v-if="reports.length === 0" class="empty-state">최근 분석 내역이 없습니다.</div>
         <div class="report-list">
-          <div v-for="report in reports" :key="report.id" class="report-card">
+          <div
+            v-for="report in reports"
+            :key="report.id"
+            class="report-card"
+            @click="router.push(`/analysis/result/${report.id}`)"
+          >
             <div class="report-info">
               <h3 class="report-job">
                 {{ report.company_name }} · {{ formatDate(report.created_at) }}
@@ -556,6 +561,7 @@ onMounted(() => {
   padding: 24px;
   background-color: white;
   transition: box-shadow 0.2s;
+  cursor: pointer;
 }
 
 .report-card:hover {
@@ -581,7 +587,7 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.arrow-btn:hover {
+.report-card:hover .arrow-btn {
   color: #111;
 }
 
@@ -622,6 +628,7 @@ onMounted(() => {
   border-radius: 12px;
   padding: 20px;
   background-color: #fff;
+  cursor: pointer;
 }
 
 .activity-card.hover-effect {
