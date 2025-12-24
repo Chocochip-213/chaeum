@@ -11,11 +11,57 @@
     <div v-else class="content-wrapper">
       <section class="book-info-section">
         <div class="book-cover">
-          <img v-if="book.cover" :src="book.cover" :alt="book.title" class="real-cover" />
-          <div v-else class="cover-placeholder">
-            <span class="cover-title">{{ book.title }}</span>
-            <span class="cover-deco">No Image</span>
-          </div>
+          <div class="image-wrapper">
+             <div class="carousel-container">
+               <div 
+                 class="carousel-track" 
+                 :style="{ transform: `translateX(-${currentImageIndex * 100}%)` }"
+               >
+                  <!-- 통합 슬라이드 루프 -->
+                  <div 
+                    v-for="(img, index) in allImages" 
+                    :key="index" 
+                    class="carousel-slide"
+                  >
+                     <img :src="img" :alt="book.title" class="real-cover" />
+                  </div>
+                  
+                  <!-- 이미지가 아예 없는 경우 (allImages empty) -->
+                  <div v-if="allImages.length === 0" class="carousel-slide placeholder-slide">
+                    <div class="cover-placeholder">
+                      <span class="cover-title">{{ book.title }}</span>
+                      <span class="cover-deco">No Image</span>
+                    </div>
+                  </div>
+               </div>
+             </div>
+            
+            <!-- Navigation Buttons -->
+            <button 
+              v-if="allImages && allImages.length > 1" 
+              class="nav-btn prev" 
+              @click.stop="prevImage"
+            >
+              <ChevronLeft size="32" stroke-width="2.5" />
+            </button>
+            <button 
+              v-if="allImages && allImages.length > 1" 
+              class="nav-btn next" 
+              @click.stop="nextImage"
+            >
+              <ChevronRight size="32" stroke-width="2.5" />
+            </button>
+ 
+             <!-- Dots Indicator -->
+            <div v-if="allImages && allImages.length > 1" class="carousel-dots">
+              <span 
+                v-for="(_, idx) in allImages" 
+                :key="idx" 
+                class="dot" 
+                :class="{ active: idx === currentImageIndex }"
+              ></span>
+            </div>
+         </div>
         </div>
 
         <div class="book-details">
@@ -140,9 +186,9 @@
 <script setup>
 import api from '@/api'
 import aladinApi from '@/api/aladin'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, MessageSquare, Eye } from 'lucide-vue-next'
+import { Plus, MessageSquare, Eye, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { usePosts } from '@/composables/usePosts'
 import { formatTimeAgo } from '@/utils/date'
 
@@ -153,6 +199,38 @@ const book = ref({})
 const stockInfo = ref(null)
 const stockLoading = ref(false)
 const showStockList = ref(false)
+
+// [추가] 이미지 슬라이드 관련 상태
+const currentImageIndex = ref(0)
+const allImages = computed(() => {
+  // 1. 미리보기가 있으면 미리보기만 보여줌 (표지 제외)
+  if (book.value.previewImgList && book.value.previewImgList.length > 0) {
+    return book.value.previewImgList
+  }
+  // 2. 미리보기가 없으면 표지만 보여줌
+  if (book.value.cover) {
+    return [book.value.cover]
+  }
+  return []
+})
+
+const prevImage = (e) => {
+  e.stopPropagation() // 클릭 이벤트 전파 방지
+  if (currentImageIndex.value > 0) {
+    currentImageIndex.value--
+  } else {
+    currentImageIndex.value = allImages.value.length - 1 // 루프
+  }
+}
+
+const nextImage = (e) => {
+  e.stopPropagation()
+  if (currentImageIndex.value < allImages.value.length - 1) {
+    currentImageIndex.value++
+  } else {
+    currentImageIndex.value = 0 // 루프
+  }
+}
 
 const checkStock = () => {
   stockLoading.value = true
@@ -204,6 +282,7 @@ const fetchBookDetail = async () => {
         output: 'js',
         Version: '20131101',
         Cover: 'Big',
+        OptResult: 'previewImgList,packing,ratingInfo', 
       },
     })
 
@@ -214,6 +293,13 @@ const fetchBookDetail = async () => {
         .split('>')
         .slice(1)
         .map((cat) => `#${cat.trim()}`)
+
+      let previews = item.previewImgList || []
+      if (!previews || previews.length === 0) {
+        if (item.subInfo && item.subInfo.previewImgList) {
+          previews = item.subInfo.previewImgList
+        }
+      }
 
       book.value = {
         title: item.title,
@@ -228,6 +314,7 @@ const fetchBookDetail = async () => {
         link: item.link,
         tags: tags.length > 0 ? tags : ['#개발', '#프로그래밍'],
         isbn13: item.isbn13,
+        previewImgList: previews
       }
     }
   } catch (error) {
@@ -665,5 +752,117 @@ watch(
   font-size: 0.8rem;
   color: #666;
   font-weight: 600;
+}
+
+/* [추가] 이미지 슬라이드 스타일 */
+.image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.image-wrapper:hover .nav-btn {
+  opacity: 1;
+}
+
+/* Slick Slide Effect */
+.carousel-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* 넘치는 부분 숨김 */
+  position: relative;
+}
+.carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.4s ease-in-out; /* 부드러운 슬라이드 전환 */
+}
+.carousel-slide {
+  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+}
+.carousel-slide img.real-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 꽉 채우기 (글자 잘릴 수 있음) - contain으로 바꾸면 여백 생김 */
+}
+.carousel-slide.placeholder-slide {
+  background-color: #fdfdfd;
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(0, 0, 0, 0.3);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0; 
+  transition: opacity 0.3s, background-color 0.2s;
+  z-index: 10;
+}
+.nav-btn:hover {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+.nav-btn.prev {
+  left: 10px;
+}
+.nav-btn.next {
+  right: 10px;
+}
+
+.carousel-dots {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s;
+}
+.dot.active {
+  background-color: white;
+  transform: scale(1.2);
+}
+
+/* [추가] 미리보기 스타일 */
+.preview-section {
+  margin-bottom: 60px;
+}
+.preview-scroll-container {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+}
+.preview-item {
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #eee;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+.preview-img {
+  height: 300px; /* 높이 고정 */
+  width: auto;
+  display: block;
 }
 </style>
