@@ -1,5 +1,6 @@
 import requests
 import json
+import html  # [추가]
 from haversine import haversine
 from django.conf import settings
 from .models import Store
@@ -90,8 +91,8 @@ class AladinStockService:
         results = []
         for api_store in api_stores:
             # API가 주는 매장명 (예: "알라딘 중고서점 강남점")
-            api_store_name = api_store.get('offName', '')
-            link = api_store.get('link', '')
+            api_store_name = html.unescape(api_store.get('offName', ''))
+            link = html.unescape(api_store.get('link', ''))
             off_code = api_store.get('offCode', '')
 
             # DB 매장 찾기 (이름 매칭)

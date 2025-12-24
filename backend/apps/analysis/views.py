@@ -36,7 +36,7 @@ class AnalysisView(views.APIView):
                 parsed_content = parser.parse_stream(file_bytes)
 
                 # 기존 이력서와 내용 비교
-                latest_resume = Resume.objects.filter(user=user).last()
+                latest_resume = Resume.objects.filter(user=user).first()
 
                 if latest_resume and latest_resume.parsed_content == parsed_content:
                     # 내용이 완전히 같으면 기존 이력서 재사용 (ID 유지)
@@ -45,7 +45,7 @@ class AnalysisView(views.APIView):
                     # 내용이 다르면 기존 삭제 후 새로 생성
                     if latest_resume:
                         latest_resume.delete()
-
+                    
                     resume = Resume.objects.create(
                         user=user,
                         file_path="",
@@ -58,7 +58,7 @@ class AnalysisView(views.APIView):
                 return Response({"error": f"PDF parsing failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             # 파일 없으면 기존 이력서 사용
-            latest_resume = Resume.objects.filter(user=user).last()
+            latest_resume = Resume.objects.filter(user=user).first()
             if not latest_resume:
                 return Response({"error": "No resume provided and no existing resume found."},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -114,7 +114,7 @@ class AnalysisView(views.APIView):
         job_posting_id = request.query_params.get('job_posting_id')
 
         # 1. 이력서 ID 자동 추론
-        latest_resume = Resume.objects.filter(user=user).last()
+        latest_resume = Resume.objects.filter(user=user).first()
         if not latest_resume:
             return Response({"error": "No resume found"}, status=status.HTTP_404_NOT_FOUND)
         resume_id = latest_resume.id
@@ -164,3 +164,35 @@ class AnalysisHistoryView(generics.ListAPIView):
     def get_queryset(self):
         # 내가 요청한 분석 결과만, 최신순 정렬
         return AnalysisResult.objects.filter(user=self.request.user).order_by('-created_at')
+
+
+class AnalysisResultDetailView(generics.RetrieveAPIView):
+    """
+    특정 분석 결과 상세 조회 (ID 기반)
+    URL: GET /api/analysis/<int:pk>/
+    """
+    serializer_class = AnalysisResultSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = AnalysisResult.objects.all()
+
+    def get_queryset(self):
+        # 본인의 데이터만 조회 가능
+        return self.queryset.filter(user=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+
+        # [RAG Lazy Loading] 추천 결과가 없으면 생성 후 저장
+        # 이미 서비스 내부에서 '있으면 반환, 없으면 생성+저장' 로직이 있으므로 호출만 하면 됨
+        try:
+            recommendations = async_to_sync(RAGService.recommend_chapters)(instance.id)
+            data['rag_recommendations'] = recommendations
+            instance.refresh_from_db()
+        except Exception as e:
+            print(f"RAG Error in DetailView: {e}")
+            data['rag_recommendations'] = []
+            data['rag_error'] = str(e)
+
+        return Response(data)
