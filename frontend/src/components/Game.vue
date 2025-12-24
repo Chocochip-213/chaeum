@@ -5,7 +5,7 @@
       <p class="game-desc">기다리는 동안 사과를 모아보세요! (현재 점수: {{ localScore }}점)</p>
     </div>
     <canvas ref="gameCanvas" width="600" height="400" class="game-canvas"></canvas>
-    <p class="game-guide">마우스를 움직여 바구니를 이동하세요</p>
+    <p class="game-guide">마우스나 터치로 바구니를 이동하세요</p>
   </div>
 </template>
 
@@ -19,18 +19,19 @@ const localScore = ref(0)
 let animationFrameId = null
 let gameLoopActive = false
 
-// 게임 내부 변수
 const basket = { x: 250, y: 350, width: 60, height: 20, speed: 8 }
 const apples = []
 const appleRadius = 10
-const spawnRate = 40 // 프레임 단위 생성 주기
+const spawnRate = 40
 let frameCount = 0
 
 const startGame = () => {
   const canvas = gameCanvas.value
   if (!canvas) return
 
-  canvas.addEventListener('mousemove', moveBasket)
+  canvas.addEventListener('mousemove', handleInput)
+  canvas.addEventListener('touchmove', handleInput, { passive: false })
+  canvas.addEventListener('touchstart', handleInput, { passive: false })
 
   gameLoopActive = true
   apples.length = 0
@@ -46,17 +47,37 @@ const stopGame = () => {
 
   const canvas = gameCanvas.value
   if (canvas) {
-    canvas.removeEventListener('mousemove', moveBasket)
+    canvas.removeEventListener('mousemove', handleInput)
+    canvas.removeEventListener('touchmove', handleInput)
+    canvas.removeEventListener('touchstart', handleInput)
   }
 }
 
-const moveBasket = (e) => {
+// 마우스와 터치 입력을 통합 처리하는 함수
+const handleInput = (e) => {
   const canvas = gameCanvas.value
   if (!canvas) return
-  const rect = canvas.getBoundingClientRect()
-  const mouseX = e.clientX - rect.left
 
-  basket.x = mouseX - basket.width / 2
+  // 모바일에서 게임 조작 중 화면 스크롤 방지
+  if (e.type === 'touchmove' || e.type === 'touchstart') {
+    e.preventDefault()
+  }
+
+  const rect = canvas.getBoundingClientRect()
+
+  // 마우스 또는 터치 좌표 가져오기
+  let clientX
+  if (e.touches && e.touches.length > 0) {
+    clientX = e.touches[0].clientX
+  } else {
+    clientX = e.clientX
+  }
+
+  const scaleX = canvas.width / rect.width
+
+  const canvasX = (clientX - rect.left) * scaleX
+
+  basket.x = canvasX - basket.width / 2
 
   if (basket.x < 0) basket.x = 0
   if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width
@@ -85,7 +106,7 @@ const update = () => {
     const apple = apples[i]
     apple.y += apple.speed
 
-    // 바구니와 충돌 (점수 획득)
+    // 바구니와 충돌
     if (
       apple.y + appleRadius >= basket.y &&
       apple.y - appleRadius <= basket.y + basket.height &&
@@ -93,12 +114,12 @@ const update = () => {
       apple.x <= basket.x + basket.width
     ) {
       localScore.value += 10
-      emit('update-score', localScore.value) // 부모에게 점수 전달
+      emit('update-score', localScore.value)
       apples.splice(i, 1)
       continue
     }
 
-    // 바닥에 닿음 (제거)
+    // 바닥에 닿음
     if (apple.y > canvas.height) {
       apples.splice(i, 1)
     }
@@ -118,7 +139,11 @@ const draw = () => {
   // 바구니
   ctx.fillStyle = '#111'
   ctx.beginPath()
-  ctx.roundRect(basket.x, basket.y, basket.width, basket.height, 5)
+  if (ctx.roundRect) {
+    ctx.roundRect(basket.x, basket.y, basket.width, basket.height, 5)
+  } else {
+    ctx.rect(basket.x, basket.y, basket.width, basket.height)
+  }
   ctx.fill()
 
   // 사과
@@ -183,7 +208,13 @@ onUnmounted(() => {
   background-color: #f9fafb;
   cursor: none;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  max-width: 100%;
+
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  aspect-ratio: 3 / 2;
+
+  touch-action: none;
 }
 
 .game-guide {
@@ -200,13 +231,6 @@ onUnmounted(() => {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@media (max-width: 600px) {
-  .game-canvas {
-    width: 100%;
-    height: 300px;
   }
 }
 </style>
