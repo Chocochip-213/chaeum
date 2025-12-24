@@ -164,3 +164,35 @@ class AnalysisHistoryView(generics.ListAPIView):
     def get_queryset(self):
         # 내가 요청한 분석 결과만, 최신순 정렬
         return AnalysisResult.objects.filter(user=self.request.user).order_by('-created_at')
+
+
+class AnalysisResultDetailView(generics.RetrieveAPIView):
+    """
+    특정 분석 결과 상세 조회 (ID 기반)
+    URL: GET /api/analysis/<int:pk>/
+    """
+    serializer_class = AnalysisResultSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = AnalysisResult.objects.all()
+
+    def get_queryset(self):
+        # 본인의 데이터만 조회 가능
+        return self.queryset.filter(user=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+
+        # [RAG Lazy Loading] 추천 결과가 없으면 생성 후 저장
+        # 이미 서비스 내부에서 '있으면 반환, 없으면 생성+저장' 로직이 있으므로 호출만 하면 됨
+        try:
+            recommendations = async_to_sync(RAGService.recommend_chapters)(instance.id)
+            data['rag_recommendations'] = recommendations
+            instance.refresh_from_db()
+        except Exception as e:
+            print(f"RAG Error in DetailView: {e}")
+            data['rag_recommendations'] = []
+            data['rag_error'] = str(e)
+
+        return Response(data)
