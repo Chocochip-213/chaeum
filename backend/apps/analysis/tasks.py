@@ -18,9 +18,8 @@ def analyze_application_task(resume_id, job_posting_id, user_id):
         job_posting = JobPosting.objects.get(id=job_posting_id)
 
         if not resume.parsed_content:
-            parser = PDFParser()
-            resume.parsed_content = parser.parse(resume.file_path)
-            resume.save()
+            logger.error(f"Resume {resume_id} has no parsed content. Cannot proceed with analysis.")
+            return
 
         if not job_posting.content:
             crawler = JobCrawler()
