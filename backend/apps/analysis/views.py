@@ -36,7 +36,7 @@ class AnalysisView(views.APIView):
                 parsed_content = parser.parse_stream(file_bytes)
 
                 # 기존 이력서와 내용 비교
-                latest_resume = Resume.objects.filter(user=user).last()
+                latest_resume = Resume.objects.filter(user=user).first()
 
                 if latest_resume and latest_resume.parsed_content == parsed_content:
                     # 내용이 완전히 같으면 기존 이력서 재사용 (ID 유지)
@@ -45,7 +45,7 @@ class AnalysisView(views.APIView):
                     # 내용이 다르면 기존 삭제 후 새로 생성
                     if latest_resume:
                         latest_resume.delete()
-
+                    
                     resume = Resume.objects.create(
                         user=user,
                         file_path="",
@@ -58,7 +58,7 @@ class AnalysisView(views.APIView):
                 return Response({"error": f"PDF parsing failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             # 파일 없으면 기존 이력서 사용
-            latest_resume = Resume.objects.filter(user=user).last()
+            latest_resume = Resume.objects.filter(user=user).first()
             if not latest_resume:
                 return Response({"error": "No resume provided and no existing resume found."},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -114,7 +114,7 @@ class AnalysisView(views.APIView):
         job_posting_id = request.query_params.get('job_posting_id')
 
         # 1. 이력서 ID 자동 추론
-        latest_resume = Resume.objects.filter(user=user).last()
+        latest_resume = Resume.objects.filter(user=user).first()
         if not latest_resume:
             return Response({"error": "No resume found"}, status=status.HTTP_404_NOT_FOUND)
         resume_id = latest_resume.id
