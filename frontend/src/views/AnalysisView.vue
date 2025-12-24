@@ -90,13 +90,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { FileText, Upload, Link as LinkIcon, Sparkles } from 'lucide-vue-next'
 import api from '@/api'
 import Game from '@/components/Game.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
 const fileInputRef = ref(null)
 const isDragging = ref(false)
 const resumeFileName = ref('')
@@ -109,6 +110,9 @@ const isAnalyzing = ref(false)
 const showResult = ref(false)
 const gameScore = ref(0)
 const analysisResultId = ref(null)
+
+let pollingInterval = null
+const POLLING_DELAY = 3000
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
@@ -198,41 +202,66 @@ const handleAnalyze = async () => {
   isAnalyzing.value = true
   showResult.value = false
   gameScore.value = 0
-  console.log('분석 시작:', jobUrl.value)
 
   const formData = new FormData()
   formData.append('job_posting_url', jobUrl.value.trim())
 
   try {
-    const response = await api.post('/analysis/', formData, {
+    await api.post('/analysis/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    console.log('분석 결과:', response)
-
-    if (response.data && response.data.id) {
-      analysisResultId.value = response.data.id
-
-      isAnalyzing.value = false
-      showResult.value = true
-    } else {
-      throw new Error('ID 미반환')
-    }
+    startPolling()
   } catch (error) {
     console.error('분석 요청 실패:', error)
-    alert('분석 중 오류가 발생했습니다.')
+    alert('분석 요청 중 오류가 발생했습니다.')
     isAnalyzing.value = false
   }
+}
+
+const startPolling = () => {
+  if (pollingInterval) clearInterval(pollingInterval)
+
+  pollingInterval = setInterval(async () => {
+    try {
+      const response = await api.get('/analysis/', {
+        params: {
+          job_posting_url: jobUrl.value.trim(),
+        },
+      })
+
+      if (response.status === 200 && response.data) {
+        clearInterval(pollingInterval)
+        analysisResultId.value = response.data.id
+        isAnalyzing.value = false
+        showResult.value = true
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+      } else {
+        console.error('폴링 중 에러 발생:', error)
+        clearInterval(pollingInterval)
+        isAnalyzing.value = false
+        alert('분석 상태 확인 중 오류가 발생했습니다.')
+      }
+    }
+  }, POLLING_DELAY)
 }
 
 const goToResult = () => {
   if (analysisResultId.value) {
     router.push({ name: 'analysis-result', params: { id: analysisResultId.value } })
+  } else {
+    alert('결과 ID가 존재하지 않습니다.')
   }
 }
 
 onMounted(() => {
   fetchUserResumes()
+})
+
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval)
 })
 </script>
 
