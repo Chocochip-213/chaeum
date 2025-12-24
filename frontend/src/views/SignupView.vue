@@ -3,8 +3,8 @@
     <AuthTemplate>
       <div class="signup-form-container">
         <div class="header">
-          <h1>계정 만들기 🚀</h1>
-          <p>채움과 함께 성장의 여정을 시작해보세요.</p>
+          <h1>계정 만들기</h1>
+          <p>채움과 함께 성장의 여정을 시작해 보세요.</p>
         </div>
         <form @submit.prevent="onSignup">
           <div class="input-group">

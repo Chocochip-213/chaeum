@@ -32,7 +32,14 @@ SECRET_KEY = 'django-insecure-bonq#=77^%ye$c0vy1$5okvh7gt4pqat9#hoid#%@&&it52fdp
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '15.164.52.217',
+    '127.0.0.1',
+    'localhost',
+    'chaeum.store',
+    'www.chaeum.store',
+    '.chaeum.store'
+]
 
 
 # Application definition
@@ -188,3 +195,8 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Seoul'
+
+INFERENCE_API_URL = env('INFERENCE_API_URL')
+GRADIO_URL = env('GRADIO_URL')
+ALADIN_TTB_KEY = env('ALADIN_TTB_KEY')
+KAKAO_REST_API_KEY = env('KAKAO_REST_API_KEY')

@@ -47,7 +47,7 @@
           <div class="textarea-wrapper">
             <textarea
               v-model="content"
-              placeholder="이 책을 읽고 어떤 생각을 하셨나요? 자유롭게 이야기를 나눠보세요."
+              placeholder="이 책을 통해 어떤 인사이트를 얻으셨나요? 자유롭게 이야기를 나눠보세요."
               class="content-textarea"
             ></textarea>
           </div>
@@ -98,11 +98,9 @@ const handleSubmit = async () => {
       content: content.value,
     })
 
-    alert('게시글이 등록되었습니다!')
     router.push({ name: 'community' })
   } catch (error) {
     console.error('글 등록 실패:', error)
-    alert('등록 중 오류가 발생했습니다.')
   }
 }
 
