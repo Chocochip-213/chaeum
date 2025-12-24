@@ -177,6 +177,11 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    'https://chaeum.store',
+    'https://www.chaeum.store',
+    'chaeum.store',
+    'www.chaeum.store',
+    '.chaeum.store',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
