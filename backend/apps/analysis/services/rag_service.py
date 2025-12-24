@@ -29,15 +29,33 @@ class RAGService:
 
     @staticmethod
     def search_similar_chapters(vector, top_k=3):
-        """pgvector를 사용하여 유사한 챕터를 검색합니다 (동기 함수)."""
+        """pgvector를 사용하여 유사한 챕터를 검색하고 중복을 제거합니다."""
         if not vector:
             return []
 
         from pgvector.django import CosineDistance
-        # Async Context 오류 방지: QuerySet -> List 즉시 변환
-        return list(TOCChunk.objects.order_by(
+        
+        # 1. 중복 제거를 위해 더 많은 후보군 검색 (3배수)
+        candidates = list(TOCChunk.objects.order_by(
             CosineDistance('embedding', vector)
-        )[:top_k])
+        )[:top_k * 3])
+
+        # 2. 중복 제거 (ISBN + Chapter Title 기준)
+        unique_results = []
+        seen = set()
+
+        for doc in candidates:
+            # 키: (책 ISBN, 챕터 제목) -> 같은 책의 같은 챕터면 중복으로 간주
+            key = (doc.book_id, doc.chapter_title)
+            
+            if key not in seen:
+                seen.add(key)
+                unique_results.append(doc)
+                
+            if len(unique_results) >= top_k:
+                break
+        
+        return unique_results
 
     @classmethod
     async def recommend_chapters(cls, analysis_result_id: int):
