@@ -33,6 +33,7 @@ SECRET_KEY = 'django-insecure-bonq#=77^%ye$c0vy1$5okvh7gt4pqat9#hoid#%@&&it52fdp
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    'api.chaeum.store',
     '15.164.52.217',
     '127.0.0.1',
     'localhost',
@@ -42,8 +43,20 @@ ALLOWED_HOSTS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://www.chaeum.store",
+    "https://chaeum.store",
+    "https://api.chaeum.store",
+]
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
     'https://chaeum.store',
     'https://www.chaeum.store',
+    'chaeum.store',
+    'www.chaeum.store',
+    '.chaeum.store',
 ]
 
 
@@ -174,15 +187,6 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    'https://chaeum.store',
-    'https://www.chaeum.store',
-    'chaeum.store',
-    'www.chaeum.store',
-    '.chaeum.store',
-]
 
 CORS_ALLOW_CREDENTIALS = True
 
