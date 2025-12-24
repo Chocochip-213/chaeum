@@ -8,6 +8,8 @@ from .models import AnalysisResult
 from .serializers import AnalysisResultSerializer
 from .tasks import analyze_application_task
 from .utils.parsers import PDFParser
+from asgiref.sync import async_to_sync
+from .services.rag_service import RAGService
 
 
 class AnalysisView(views.APIView):
@@ -101,9 +103,11 @@ class AnalysisView(views.APIView):
 
         return Response({"message": "Analysis started", "task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
+
+
     def get(self, request):
         """
-        분석 결과 조회
+        분석 결과 조회 + RAG 추천 도서 포함
         """
         user = request.user
         job_posting_url = request.query_params.get('job_posting_url')
@@ -132,7 +136,17 @@ class AnalysisView(views.APIView):
 
             if result:
                 serializer = AnalysisResultSerializer(result)
-                return Response(serializer.data)
+                data = serializer.data
+
+                try:
+                    recommendations = async_to_sync(RAGService.recommend_chapters)(result.id)
+                    data['rag_recommendations'] = recommendations
+                except Exception as e:
+                    print(f"RAG Error: {e}")
+                    data['rag_recommendations'] = []
+                    data['rag_error'] = str(e)
+
+                return Response(data)
             else:
                 return Response({"status": "pending", "message": "Analysis in progress"},
                                 status=status.HTTP_404_NOT_FOUND)

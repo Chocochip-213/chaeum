@@ -29,7 +29,7 @@ backend/apps/community/management
 ### Gradio Test ###
 backend/seed_test_data.py
 backend/test_resume.pdf
-
+backend/guides/
 # C extensions
 *.so
 

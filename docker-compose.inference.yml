@@ -1,0 +1,20 @@
+services:
+  inference_service:
+    build:
+      context: ./inference
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./inference:/app
+    environment:
+      - BATCH_SIZE=64 # GPU 메모리가 넉넉하면 64~128 권장
+      - BATCH_TIMEOUT=0.1 # AWS <-> Local 지연 고려 (0.1초)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    restart: always
