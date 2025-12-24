@@ -41,6 +41,11 @@ ALLOWED_HOSTS = [
     '.chaeum.store'
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://chaeum.store',
+    'https://www.chaeum.store',
+]
+
 
 # Application definition
 
