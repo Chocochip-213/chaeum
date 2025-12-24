@@ -103,15 +103,17 @@ class AnalysisView(views.APIView):
 
         return Response({"message": "Analysis started", "task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
+
+
     def get(self, request):
         """
-        분석 결과 조회
+        분석 결과 조회 + RAG 추천 도서 포함
         """
         user = request.user
         job_posting_url = request.query_params.get('job_posting_url')
         job_posting_id = request.query_params.get('job_posting_id')
 
-        # 1. 이력서 ID 추론
+        # 1. 이력서 ID 자동 추론
         latest_resume = Resume.objects.filter(user=user).last()
         if not latest_resume:
             return Response({"error": "No resume found"}, status=status.HTTP_404_NOT_FOUND)
@@ -135,14 +137,15 @@ class AnalysisView(views.APIView):
             if result:
                 serializer = AnalysisResultSerializer(result)
                 data = serializer.data
+
                 try:
                     recommendations = async_to_sync(RAGService.recommend_chapters)(result.id)
                     data['rag_recommendations'] = recommendations
                 except Exception as e:
-                    # 검색 실패 시에도 기본 분석 결과는 반환
                     print(f"RAG Error: {e}")
                     data['rag_recommendations'] = []
                     data['rag_error'] = str(e)
+
                 return Response(data)
             else:
                 return Response({"status": "pending", "message": "Analysis in progress"},
