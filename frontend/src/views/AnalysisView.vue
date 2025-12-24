@@ -9,7 +9,7 @@
       </div>
     </header>
 
-    <main class="analysis-content">
+    <main v-if="!isAnalyzing && !showResult" class="analysis-content">
       <section class="analysis-section">
         <h2 class="section-label">1. 내 이력서 등록</h2>
         <input
@@ -61,7 +61,7 @@
               class="url-input"
               @focus="isUrlFocused = true"
               @blur="isUrlFocused = false"
-              @keydown.enter="handleAnalyze"
+              @keydown.enter="handleEnter"
             />
           </div>
           <button class="analyze-btn" @click="handleAnalyze" :disabled="!jobUrl || !resumeFileName">
@@ -72,13 +72,31 @@
         <p class="helper-text">* 이력서가 등록되어 있어야 분석이 가능합니다.</p>
       </section>
     </main>
+
+    <Game v-if="isAnalyzing" @update-score="handleGameScore" />
+
+    <div v-if="showResult" class="result-container">
+      <div class="result-box">
+        <Sparkles :size="48" class="result-icon" />
+        <h2 class="result-title">분석이 완료되었습니다!</h2>
+        <p class="result-score">
+          기다리는 동안 획득한 사과: <strong>{{ gameScore }}</strong
+          >점
+        </p>
+        <button class="result-btn" @click="goToResult">분석 결과 보러 가기</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { FileText, Upload, Link as LinkIcon, Sparkles } from 'lucide-vue-next'
 import api from '@/api'
+import Game from '@/components/Game.vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const fileInputRef = ref(null)
 const isDragging = ref(false)
@@ -87,6 +105,14 @@ const resumeFileDate = ref('')
 
 const jobUrl = ref('')
 const isUrlFocused = ref(false)
+
+const isAnalyzing = ref(false)
+const showResult = ref(false)
+const gameScore = ref(0)
+const analysisResultId = ref(null)
+
+let pollingInterval = null
+const POLLING_DELAY = 3000
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
@@ -111,18 +137,17 @@ const handleDrop = (event) => {
 
 const processFile = async (file) => {
   if (!file) return
+
   const formData = new FormData()
   formData.append('file', file)
 
   try {
-    const response = await api.post('/resumes/', formData, {
+    await api.post('/resumes/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     await fetchUserResumes()
-    alert('이력서가 등록되었습니다.')
   } catch (error) {
     console.error('이력서 업로드 실패:', error)
-    alert('업로드 중 오류가 발생했습니다.')
     if (fileInputRef.value) fileInputRef.value.value = ''
   }
 }
@@ -141,6 +166,22 @@ const fetchUserResumes = async () => {
   }
 }
 
+const handleGameScore = (score) => {
+  gameScore.value = score
+}
+
+const checkPlatformUrl = (url) => {
+  const targetUrl = url.trim()
+  const isJumpit = targetUrl.includes('jumpit.saramin.co.kr/position/')
+  const isWanted = targetUrl.includes('wanted.co.kr/wd/')
+  return isJumpit || isWanted
+}
+
+const handleEnter = (e) => {
+  if (e.isComposing) return
+  handleAnalyze()
+}
+
 const handleAnalyze = async () => {
   if (!resumeFileName.value) {
     alert('먼저 이력서를 등록해주세요.')
@@ -150,14 +191,77 @@ const handleAnalyze = async () => {
     alert('채용 공고 URL을 입력해주세요.')
     return
   }
+  if (!checkPlatformUrl(jobUrl.value)) {
+    alert(
+      '지원하지 않는 플랫폼입니다.\n점핏(Jumpit) 또는 원티드(Wanted) 채용 공고 분석 가능합니다.',
+    )
+    jobUrl.value = ''
+    return
+  }
 
-  // TODO: 실제 분석 API 호출 로직 작성
-  console.log('분석 시작:', jobUrl.value)
-  alert('로딩 시작')
+  isAnalyzing.value = true
+  showResult.value = false
+  gameScore.value = 0
+
+  const formData = new FormData()
+  formData.append('job_posting_url', jobUrl.value.trim())
+
+  try {
+    await api.post('/analysis/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    startPolling()
+  } catch (error) {
+    console.error('분석 요청 실패:', error)
+    alert('분석 요청 중 오류가 발생했습니다.')
+    isAnalyzing.value = false
+  }
+}
+
+const startPolling = () => {
+  if (pollingInterval) clearInterval(pollingInterval)
+
+  pollingInterval = setInterval(async () => {
+    try {
+      const response = await api.get('/analysis/', {
+        params: {
+          job_posting_url: jobUrl.value.trim(),
+        },
+      })
+
+      if (response.status === 200 && response.data) {
+        clearInterval(pollingInterval)
+        analysisResultId.value = response.data.id
+        isAnalyzing.value = false
+        showResult.value = true
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+      } else {
+        console.error('폴링 중 에러 발생:', error)
+        clearInterval(pollingInterval)
+        isAnalyzing.value = false
+        alert('분석 상태 확인 중 오류가 발생했습니다.')
+      }
+    }
+  }, POLLING_DELAY)
+}
+
+const goToResult = () => {
+  if (analysisResultId.value) {
+    router.push({ name: 'analysis-result', params: { id: analysisResultId.value } })
+  } else {
+    alert('결과 ID가 존재하지 않습니다.')
+  }
 }
 
 onMounted(() => {
   fetchUserResumes()
+})
+
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval)
 })
 </script>
 
@@ -167,12 +271,11 @@ onMounted(() => {
   margin: 0 auto;
   padding: 60px 20px 100px;
   position: relative;
+  min-height: 600px;
 }
-
 .community-header {
   margin-bottom: 40px;
 }
-
 .main-title {
   font-size: 28px;
   font-weight: 800;
@@ -180,38 +283,30 @@ onMounted(() => {
   margin-bottom: 8px;
   letter-spacing: -0.5px;
 }
-
 .sub-title {
   color: #666;
   font-size: 15px;
   line-height: 1.5;
 }
-
 .analysis-content {
   display: flex;
   flex-direction: column;
-  gap: 40px; /* 섹션 간 간격 */
+  gap: 40px;
 }
-
-/* 섹션 공통 스타일 */
 .analysis-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
 .section-label {
   font-size: 16px;
   font-weight: 700;
   color: #111;
   margin: 0;
 }
-
-/* --- 1. 이력서 업로드 스타일 --- */
 .hidden-input {
   display: none;
 }
-
 .upload-zone {
   position: relative;
   width: 100%;
@@ -227,25 +322,21 @@ onMounted(() => {
   overflow: hidden;
   box-sizing: border-box;
 }
-
 .upload-zone.dragging {
   border-color: #111;
   background-color: #f3f4f6;
   transform: scale(0.99);
 }
-
 .upload-zone.has-file {
   border: 1px solid #e5e7eb;
   background-color: white;
   justify-content: flex-start;
   padding: 0 24px;
 }
-
 .upload-placeholder {
   text-align: center;
   pointer-events: none;
 }
-
 .icon-circle {
   width: 40px;
   height: 40px;
@@ -258,27 +349,23 @@ onMounted(() => {
   margin: 0 auto 12px;
   color: #666;
 }
-
 .upload-main-text {
   font-size: 14px;
   font-weight: 600;
   color: #374151;
   margin: 0 0 4px 0;
 }
-
 .upload-sub-text {
   font-size: 12px;
   color: #9ca3af;
   margin: 0;
 }
-
 .file-exists-state {
   display: flex;
   align-items: center;
   width: 100%;
   gap: 16px;
 }
-
 .file-icon-wrapper {
   width: 52px;
   height: 52px;
@@ -290,7 +377,6 @@ onMounted(() => {
   color: #374151;
   flex-shrink: 0;
 }
-
 .file-info-text {
   display: flex;
   flex-direction: column;
@@ -299,7 +385,6 @@ onMounted(() => {
   overflow: hidden;
   gap: 2px;
 }
-
 .file-name {
   font-size: 15px;
   font-weight: 700;
@@ -308,23 +393,19 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .last-update {
   font-size: 13px;
   color: #4b5563;
 }
-
 .file-action-text {
   font-size: 12px;
   color: #9ca3af;
 }
-
 .url-input-container {
   display: flex;
   gap: 12px;
   height: 52px;
 }
-
 .input-wrapper {
   flex: 1;
   display: flex;
@@ -335,19 +416,16 @@ onMounted(() => {
   padding: 0 16px;
   transition: all 0.2s ease;
 }
-
 .input-wrapper.focused {
   border-color: #111;
   background-color: #fff;
   box-shadow: 0 0 0 1px #111;
 }
-
 .input-icon {
   color: #9ca3af;
   margin-right: 12px;
   flex-shrink: 0;
 }
-
 .url-input {
   width: 100%;
   border: none;
@@ -356,11 +434,9 @@ onMounted(() => {
   color: #111;
   outline: none;
 }
-
 .url-input::placeholder {
   color: #9ca3af;
 }
-
 .analyze-btn {
   display: flex;
   align-items: center;
@@ -376,36 +452,104 @@ onMounted(() => {
   white-space: nowrap;
   transition: all 0.2s;
 }
-
 .analyze-btn:hover:not(:disabled) {
   background-color: #333;
   transform: translateY(-1px);
 }
-
 .analyze-btn:disabled {
   background-color: #e5e7eb;
   color: #9ca3af;
   cursor: not-allowed;
   transform: none;
 }
-
 .helper-text {
   font-size: 13px;
   color: #9ca3af;
   margin: 0;
   padding-left: 4px;
 }
-
+.result-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  animation: fadeIn 0.5s ease;
+}
+.result-box {
+  text-align: center;
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.result-icon {
+  color: #111;
+  margin-bottom: 8px;
+  animation: bounce 1s infinite;
+}
+.result-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111;
+  margin: 0;
+}
+.result-score {
+  font-size: 18px;
+  color: #4b5563;
+  margin: 0 0 16px 0;
+}
+.result-score strong {
+  color: #ef4444;
+  font-size: 24px;
+}
+.result-btn {
+  padding: 14px 32px;
+  background-color: #111;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.result-btn:hover {
+  background-color: #333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
 @media (max-width: 600px) {
   .url-input-container {
     flex-direction: column;
     height: auto;
   }
-
   .input-wrapper {
     padding: 16px;
   }
-
   .analyze-btn {
     width: 100%;
     height: 50px;
