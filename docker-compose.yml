@@ -1,12 +1,11 @@
 services:
-
-  # [2] Redis
+  # Redis
   redis:
     image: redis:7.2-alpine
     ports:
       - "6379:6379"
 
-  # [3] Backend (Django)
+  # Backend (Django)
   backend:
     build: ./backend
     command: python manage.py runserver 0.0.0.0:8000
