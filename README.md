@@ -1,93 +1,131 @@
-# final-pjt
+# 🚀 채움 - 나를 채우는 AI 커리어 코칭
 
 
+> **"당신의 이력서와 채용공고 사이의 '빈틈(Gap)'을 찾아, 딱 맞는 전공 서적을 추천해 드립니다."**
 
-## Getting started
+<br>
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## 1. 프로젝트 소개 (Project Overview)
+**채움(Chan-Eum)**은 취업 준비생들이 직면하는 "내가 왜 떨어졌는지, 무엇이 부족한지 모르는" 문제를 해결하기 위해 개발된 **AI 기반 직무 역량 분석 및 도서 추천 서비스**입니다.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+사용자는 채용공고(JD) URL과 이력서(PDF)만 입력하면, AI가 두 문서를 비교 분석하여 **부족한 기술 역량을 시각화**하고, 이를 보완할 수 있는 **구체적인 전공 서적의 챕터**를 추천받을 수 있습니다.
 
-## Add your files
+### 📅 진행 기간
+- 2024. 11. 18 ~ 2024. 12. 26 (6주)
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+### 🎯 주요 타겟 및 기대 효과
+- **타겟:** 자신의 기술적 부족함을 객관적으로 파악하고 싶은 신입/주니어 개발자
+- **효과:** 막연한 취업 준비에서 벗어나, **"지금 당장 읽어야 할 책"**이라는 구체적인 행동 지침(Action Plan) 획득
 
+<br>
+
+## 2. 주요 기능 (Key Features)
+
+### 1) 📄 PDF 이력서 분석 (Resume Parsing)
+- 자유 양식의 PDF 이력서에서 **기술 스택(Skills)**과 **프로젝트 경험**을 구조화된 데이터로 정밀 추출합니다.
+
+### 2) 📊 직무 적합도 분석 (Gap Analysis)
+- 사용자가 입력한 채용공고(JD)와 이력서를 LLM이 비교 분석합니다.
+- **적합도 점수(0~100)**와 함께, 합격을 위해 보완해야 할 **Missing Skills**를 도출합니다.
+
+### 3) 📚 RAG 기반 도서 추천 (RAG Book Recommendation)
+- 단순히 "자바 공부하세요"가 아닙니다. 
+- "Spring Security 인증 부분이 부족하니, **'스프링 부트 완벽 가이드'의 15장: 보안 설정**을 읽으세요"라고 콕 집어 추천합니다.
+- 33만 개의 IT 도서 목차 데이터를 벡터화하여 검색합니다.
+
+
+<br>
+
+## 3. 기술 스택 (Tech Stack)
+
+### Frontend
+<img src="https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=Vue.js&logoColor=white"> <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=Vite&logoColor=white"> <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=JavaScript&logoColor=black">
+
+### Backend
+<img src="https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=Django&logoColor=white"> <img src="https://img.shields.io/badge/Celery-37814A?style=for-the-badge&logo=Celery&logoColor=white"> <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=Redis&logoColor=white">
+
+### Database
+<img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=PostgreSQL&logoColor=white"> <img src="https://img.shields.io/badge/pgvector-336791?style=for-the-badge&logo=PostgreSQL&logoColor=white">
+
+### AI / Infra
+<img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=FastAPI&logoColor=white"> <img src="https://img.shields.io/badge/Qwen_2.5-000000?style=for-the-badge&logo=HuggingFace&logoColor=white"> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=Docker&logoColor=white"> <img src="https://img.shields.io/badge/AWS_EC2-232F3E?style=for-the-badge&logo=AmazonAWS&logoColor=white">
+
+<br>
+
+## 4. 시스템 아키텍처 (System Architecture)
+
+**Hybrid Cloud Architecture** (AWS + On-Premise GPU)
+
+```mermaid
+graph TD
+    User([Web Browser]) -->|HTTPS| AWS[AWS EC2 (Web Server)]
+    
+    subgraph "AWS Cloud (t2.micro)"
+        Nginx[Nginx] --> Django[Django API]
+        Django --> DB[(PostgreSQL)]
+        Django --> Redis[Redis Queue]
+    end
+    
+    subgraph "Local GPU Server"
+        Ngrok[Ngrok Tunnel]
+        Inference[FastAPI LLM Server]
+    end
+    
+    Redis --> Worker[Celery Worker]
+    Worker -->|Secure Tunnel| Ngrok
+    Ngrok --> Inference
 ```
-cd existing_repo
-git remote add origin https://lab.ssafy.com/jumee.frontdev/final-pjt.git
-git branch -M master
-git push -uf origin master
+
+### 📂 디렉토리 구조
+```bash
+├── backend      # Django API Server & Celery Worker
+├── frontend     # Vue.js Client Application
+└── inference    # FastAPI LLM Serving (Local GPU)
 ```
 
-## Integrate with your tools
+<br>
 
-- [ ] [Set up project integrations](https://lab.ssafy.com/jumee.frontdev/final-pjt/-/settings/integrations)
+## 5. 시작 가이드 (Getting Started)
 
-## Collaborate with your team
+### Prerequisites
+* Docker & Docker Compose
+* Ngrok (for Local GPU connection)
+* Node.js 20+
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### Installation & Run
 
-## Test and Deploy
+**1. Clone the repository**
+```bash
+git clone https://lab.ssafy.com/jumee.frontdev/final-pjt.git
+cd final-pjt
+```
 
-Use the built-in continuous integration in GitLab.
+**2. Setup Environment Variables**
+- `backend/.env` 및 `frontend/.env` 설정 (API Key 등)
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+**3. Run with Docker Compose**
+```bash
+docker-compose up -d --build
+```
+- Frontend: http://localhost:5173
+- Backend: http://localhost:8000
 
-***
+<br>
 
-# Editing this README
+## 6. 트러블 슈팅 (Troubleshooting)
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### 🔥 하이브리드 클라우드 연결 (AWS <-> Local GPU)
+* **문제:** AWS EC2(외부)에서 로컬 GPU 서버(내부망)로의 직접 통신 불가
+* **해결:** **Ngrok 터널링**을 도입하여 로컬 FastAPI 포트를 공인 URL로 노출, Celery 워커가 이를 호출하도록 구성.
 
-## Suggestions for a good README
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+<br>
 
-## Name
-Choose a self-explaining name for your project.
+## 7. 팀원 소개 (Team)
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+| 팀장 (Backend & AI) | 팀원 (Backend & Frontend) | 
+| :---: | :---: |
+| **김민우** |  **서주미** |
+| Django, RAG, LLM | Django, Vue.js, UI/UX |
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+---
