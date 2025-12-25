@@ -47,6 +47,13 @@
             <p class="upload-sub-text">PDF</p>
           </div>
         </div>
+
+        <div class="sample-load-wrapper">
+          <button class="text-btn" @click="showSampleModal = true" type="button">
+            <Sparkles :size="14" />
+            체험용 샘플 이력서 불러오기
+          </button>
+        </div>
       </section>
 
       <section class="analysis-section">
@@ -86,6 +93,12 @@
         <button class="result-btn" @click="goToResult">분석 결과 보러 가기</button>
       </div>
     </div>
+
+    <SampleResumeModal
+      v-if="showSampleModal"
+      @close="showSampleModal = false"
+      @success="fetchUserResumes"
+    />
   </div>
 </template>
 
@@ -94,6 +107,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { FileText, Upload, Link as LinkIcon, Sparkles } from 'lucide-vue-next'
 import api from '@/api'
 import Game from '@/components/Game.vue'
+import SampleResumeModal from '@/components/SampleResumeModal.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -102,6 +116,7 @@ const fileInputRef = ref(null)
 const isDragging = ref(false)
 const resumeFileName = ref('')
 const resumeFileDate = ref('')
+const showSampleModal = ref(false)
 
 const jobUrl = ref('')
 const isUrlFocused = ref(false)
@@ -376,6 +391,31 @@ onUnmounted(() => {
   justify-content: center;
   color: #374151;
   flex-shrink: 0;
+  color: #374151;
+  flex-shrink: 0;
+}
+.sample-load-wrapper {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+.text-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.text-btn:hover {
+  background-color: #f3f4f6;
+  color: #111;
 }
 .file-info-text {
   display: flex;

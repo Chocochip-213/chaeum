@@ -154,6 +154,14 @@
                   <p class="upload-sub-text">PDF</p>
                 </div>
               </div>
+
+              <!-- 샘플 데이터 로드 버튼 추가 -->
+              <div class="sample-load-wrapper">
+                <button class="text-btn" @click="showSampleModal = true" type="button">
+                  <Sparkles :size="14" />
+                  체험용 샘플 이력서 불러오기
+                </button>
+              </div>
             </div>
           </div>
 
@@ -236,6 +244,12 @@
         </div>
       </section>
     </main>
+
+    <SampleResumeModal
+      v-if="showSampleModal"
+      @close="showSampleModal = false"
+      @success="fetchUserResumes"
+    />
   </div>
 </template>
 
@@ -254,11 +268,13 @@ import {
   AlertTriangle,
   Eye,
   Upload,
+  Sparkles // 추가
 } from 'lucide-vue-next'
 
 import api from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
+import SampleResumeModal from '@/components/SampleResumeModal.vue' // 추가
 
 const router = useRouter()
 const route = useRoute()
@@ -277,6 +293,7 @@ const reports = ref([])
 const passwordForm = ref({ current: '', new: '', confirm: '' })
 const fileInputRef = ref(null)
 const isDragging = ref(false)
+const showSampleModal = ref(false) // 추가
 
 watch(activeTab, (newTab) => {
   router.replace({ query: { ...route.query, tab: newTab } })
@@ -798,14 +815,34 @@ onMounted(() => {
 .file-icon-wrapper {
   width: 48px;
   height: 48px;
-  background-color: #f3f4f6;
-  border-radius: 8px;
+}
+
+.sample-load-wrapper {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 13px;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #111;
-  flex-shrink: 0;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
+
+.text-btn:hover {
+  background-color: #f3f4f6;
+  color: #111;
+}
+
 
 .file-info-text {
   display: flex;
