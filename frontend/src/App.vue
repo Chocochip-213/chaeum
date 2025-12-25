@@ -19,4 +19,5 @@ const layout = computed(() => {
   // 라우트 정보가 확인된 후에 올바른 레이아웃을 반환
   return route.meta.layout === 'empty' ? EmptyLayout : DefaultLayout
 })
+
 </script>
