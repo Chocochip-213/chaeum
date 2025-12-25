@@ -3,9 +3,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
+import uuid
+from django.contrib.auth import login
+from django.http import JsonResponse
 
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -127,3 +132,40 @@ class UserProfileView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def demo_login(request):
+    # 1. 랜덤한 유니크 ID 생성
+    random_suffix = str(uuid.uuid4())[:8]
+    email = f'demo_{random_suffix}@example.com'
+    nickname = f'Guest_{random_suffix}'
+    password = 'demopassword'
+
+    # 2. 유저 생성
+    User = get_user_model()
+    # 이메일 기반이므로 email 필드 사용, nickname은 필수 필드
+    user, created = User.objects.get_or_create(
+        email=email,
+        defaults={'nickname': nickname}
+    )
+    
+    if created:
+        user.set_password(password)
+        user.save()
+
+    # 3. 로그인 처리 (세션 생성)
+    # backend를 명시해주어야 login()이 정상 작동함 (authenticate를 거치지 않았으므로)
+    user.backend = 'django.contrib.auth.backends.ModelBackend'
+    login(request, user)
+    
+    # 4. JWT 토큰 생성
+    refresh = RefreshToken.for_user(user)
+
+    return JsonResponse({
+        'message': 'Guest login success', 
+        'email': email,
+        'nickname': nickname,
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    })
